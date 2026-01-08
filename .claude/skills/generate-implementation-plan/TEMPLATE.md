@@ -32,19 +32,28 @@ Copy this template when enriching a plan. Fill in all bracketed sections.
 
 ### Per-Task Cycle
 
-1. **Start:** Update task status to `🔄 In Progress` in Execution Log
-2. **Implement:** Complete the task steps
-3. **Verify:** Run the task's verification step
-4. **Review:** Run `/pr-review-toolkit:review-pr` with aspects matching changes:
+1. **Checkpoint Start:** `/checkpoint <plan-path> <task-number> started`
+2. **Context Load:** Re-read files listed in task's "Context Requirements"
+3. **Implement:** Complete the task steps
+4. **Verify:** Run the task's verification step
+5. **Review:** Run `/pr-review-toolkit:review-pr` with aspects matching changes:
    | Changes | Command |
    |---------|---------|
    | Code only | `code` |
    | + Error handling | `code errors` |
    | + Types | `code types` |
    | + Tests | `code tests` |
-5. **Fix if needed:** Address critical issues (max 2 cycles per task)
-6. **Commit:** After review passes, commit with descriptive message
-7. **Complete:** Update status to `✅ Done`, Review to `✅ Passed`
+6. **Fix if needed:** Address critical issues (max 2 cycles per task)
+7. **Commit:** After review passes, commit with descriptive message
+8. **Checkpoint Complete:** `/checkpoint <plan-path> <task-number> completed`
+9. **Rotation Check:** If checkpoint warns about rotation, consider clearing session
+
+### Rotation Heuristic
+
+After 4 tasks or 30 minutes, consider rotating session:
+1. Run `/checkpoint` to save state
+2. Clear session
+3. Run `/resume-plan <plan-path>` in fresh session
 
 ### Critical vs Non-Critical
 
@@ -86,7 +95,14 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 **Complexity:** 🟢 Simple | 🟡 Moderate | 🔴 Complex
 **Depends on:** None | Task N, Task M
 **Parallel group:** A | — (sequential)
-**Recommended Agent:** [agent-name] | — (none needed)
+**Dispatch:** direct | sub-agent ([agent-name])
+
+**Context Requirements:**
+- **Required** (must re-read before starting):
+  - `exact/path/to/file.ts` - sections: [functionName, className]
+  - `exact/path/to/types.ts` - all
+- **Reference** (consult if needed):
+  - `docs/architecture.md` - sections: [relevant section]
 
 **Files:**
 - Modify: `exact/path/to/file.ts:45-60`
@@ -100,13 +116,20 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 
 **Review scope:** [Files modified in this task]
 
+**Failure Modes:**
+- **If [symptom]:** Likely cause is [X]. Fix by [Y].
+
+**Handoff Notes:** (fill after completion)
+- [What the next task needs to know about this implementation]
+
 **Checklist:**
-- [ ] Status → 🔄 In Progress
+- [ ] `/checkpoint <plan> <task> started`
+- [ ] Context requirements re-read
 - [ ] Implementation complete
 - [ ] Verification passed
 - [ ] Review: `/pr-review-toolkit:review-pr [aspects]`
 - [ ] Committed
-- [ ] Status → ✅ Done
+- [ ] `/checkpoint <plan> <task> completed`
 
 ---
 
@@ -123,6 +146,28 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 - Only parallelize tasks with NO shared file modifications
 - All dependencies must be complete before starting
 - Use Task tool to spawn parallel agents when beneficial
+
+---
+
+## Orchestration Hints
+
+> For `/execute-plan` command - guides dispatch decisions
+
+**Parallel groups:**
+- Group A: [task_1, task_2] - Independent, can run simultaneously
+- Group B: [task_4, task_5] - Depend on Group A, parallel after A completes
+
+**Dispatch decisions:**
+| Task | Dispatch | Rationale |
+|------|----------|-----------|
+| Task 1 | direct | Simple, < 50 lines |
+| Task 2 | sub-agent (test-writer) | TDD test writing |
+| Task 3 | sub-agent (implementer) | Complex implementation |
+| Task N | direct | Config/trivial change |
+
+**Dispatch guidelines:**
+- `direct`: Simple edits, config changes, < 50 lines modified
+- `sub-agent`: TDD tests, complex implementation, code review
 
 ---
 

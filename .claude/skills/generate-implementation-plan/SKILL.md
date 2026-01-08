@@ -79,6 +79,7 @@ Without these, executors will skip reviews because the instructions are too far 
 
 - **Plan template**: [TEMPLATE.md](TEMPLATE.md)
 - **Enrichment checklist**: [ENRICHMENT-CHECKLIST.md](ENRICHMENT-CHECKLIST.md)
+- **Failure modes examples**: [FAILURE-MODES-EXAMPLES.md](FAILURE-MODES-EXAMPLES.md)
 - **Execution guide**: [EXECUTION-GUIDE.md](EXECUTION-GUIDE.md)
 
 ## Execution Handoff
