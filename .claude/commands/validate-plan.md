@@ -1,5 +1,6 @@
 ---
 description: Validate a Claude Code plan before implementation
+argument-hint: [plan-path]
 arguments:
   - name: plan_path
     description: Path to the plan file (optional - will search ~/.claude/plans/ if not provided)

@@ -96,6 +96,9 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 **Depends on:** None | Task N, Task M
 **Parallel group:** A | — (sequential)
 **Dispatch:** direct | sub-agent ([agent-name])
+**Recommended skill:** `[skill-name]` | — (none)
+  - [When to invoke: BEFORE/DURING/AFTER implementation]
+  - [What the skill provides]
 
 **Context Requirements:**
 - **Required** (must re-read before starting):

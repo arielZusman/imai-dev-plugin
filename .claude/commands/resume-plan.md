@@ -1,5 +1,6 @@
 ---
 description: Resume execution of an enriched plan with checkpoint support
+argument-hint: <plan-name> [task-id]
 arguments:
   - name: plan
     description: Plan filename (e.g., "influencer-tier-filter" or full path)

@@ -1,5 +1,6 @@
 ---
 description: Prime a session with the current plan and task context
+argument-hint: [task-id]
 ---
 
 # INPUTS

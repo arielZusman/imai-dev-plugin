@@ -1,6 +1,13 @@
 ---
 name: generate-implementation-plan
-description: Enriches Claude Code plans with full context for standalone execution. Use after plan creation, when generating implementation plans, or when preparing plans for fresh sessions.
+description: |
+  Converts basic plans into execution-ready documents with embedded context,
+  verification steps, and mandatory code review workflow.
+
+  Use after creating a plan, or when preparing plans for fresh sessions
+  where inline context is essential for execution.
+context: fork
+agent: Plan
 ---
 
 # Generate Implementation Plan
@@ -22,8 +29,9 @@ description: Enriches Claude Code plans with full context for standalone executi
 3. **Gather context** - Read relevant files mentioned in the plan
 4. **Enrich** - Add self-contained header and inline code context
 5. **Add verification** - How to confirm each task is complete
-6. **Save** - Write to `docs/plans/YYYY-MM-DD-<feature-name>.md`
-7. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md`
+6. **Add skill recommendations** - Which skills to invoke per task
+7. **Save** - Write to `docs/plans/YYYY-MM-DD-<feature-name>.md`
+8. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md`
 
 ## Key Principles
 
@@ -34,31 +42,52 @@ The enriched plan is for a **fresh Claude session** with zero prior context.
 - Reference relevant code snippets directly in the plan
 - Intent for business logic, exact content for templates/config
 - Verification criteria for every task
+- Skill recommendations for specialized workflows
+
+## Skill Recommendations
+
+For each task, recommend relevant skills that should be invoked. Check all available skills including:
+- Built-in skills (e.g., from superpowers plugin)
+- Project-specific skills (in `.claude/skills/`)
+- Third-party plugin skills
+
+| Task Type | Recommended Skill | When to Use |
+|-----------|------------------|-------------|
+| Writing tests first | `superpowers:test-driven-development` | TDD workflow, test before implementation |
+| Debugging issues | `superpowers:systematic-debugging` | Bug fixes, unexpected behavior |
+| Multiple independent tasks | `superpowers:dispatching-parallel-agents` | 2+ tasks can run in parallel |
+| Planning implementation | `superpowers:writing-plans` | Multi-step feature planning |
+| Code review | `superpowers:requesting-code-review` | After completing tasks |
+| Session boundaries | `handoff-summary` | Before rotating sessions |
+| Session health | `session-management` | Context degradation suspected |
+
+**Per-task format:**
+```markdown
+**Recommended skill:** `superpowers:test-driven-development`
+  - Invoke BEFORE writing implementation code
+  - Ensures tests are written first
+```
+
+**Selection criteria:**
+- Match task type to skill purpose
+- Use `—` if no skill provides clear benefit
+- Include invocation timing (before/during/after implementation)
 
 ## Agent Recommendations
 
-For Discovery-imai projects, recommend a subagent per task when it benefits implementation. Only include if the agent's specialty matches the task.
+When a specialist agent would benefit a task, recommend it. Common patterns:
 
-| Agent | Domain | Use When |
-|-------|--------|----------|
-| `imai-frontend:angular-expert` | Frontend | Angular components, RxJS, reactive forms |
-| `imai-frontend:ui-ux-expert` | Frontend | Figma→Angular, design system, accessibility |
-| `imai-frontend:translation-expert` | Frontend | i18n, hardcoded strings, translations |
-| `imai-backend:api-expert` | Backend | REST endpoints, auth, API docs |
-| `imai-backend:database-expert` | Backend | Schema design, query optimization, migrations |
-| `imai-backend:nestjs-expert` | Backend | NestJS modules, entities, microservices |
-| `imai-qa:qa-performance-tester` | QA | Load testing, bottleneck analysis |
-| `imai-qa:qa-security-tester` | QA | Security validation, OWASP compliance |
-| `imai-qa:qa-integration-tester` | QA | Cross-service testing, API contracts |
-| `imai-qa:performance-optimizer` | QA | Query optimization, caching, bundle size |
-| `imai-qa:bug-hunter` | QA | Production issues, root cause analysis |
-| `imai-qa:qa-regression-tester` | QA | Backward compatibility, pre-release |
-| `imai-qa:qa-documentation-manager` | QA | Docs, changelogs, PR descriptions |
+| Task Type | Agent Type | When to Use |
+|-----------|------------|-------------|
+| Test writing | `test-writer` | TDD test design needs fresh context |
+| Complex implementation | `general-purpose` | Context isolation benefit |
+| Code exploration | `Explore` | Understanding unfamiliar code |
+| Architecture decisions | `Plan` | Design decisions, trade-offs |
 
 **Selection criteria:**
 - Match task domain to agent specialty
 - Use `—` if no agent provides clear benefit
-- Prefer specific agents over general ones (e.g., `database-expert` for migrations, not `nestjs-expert`)
+- Consider project-specific agents if available
 
 ## Critical: Execution Workflow Embedding
 

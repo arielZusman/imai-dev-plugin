@@ -1,5 +1,6 @@
 ---
 description: Save execution checkpoint for plan resumption across sessions
+argument-hint: <plan-path> <task-number> <status>
 arguments:
   plan_path:
     description: Path to the enriched plan file

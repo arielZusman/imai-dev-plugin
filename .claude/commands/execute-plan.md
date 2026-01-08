@@ -1,5 +1,6 @@
 ---
 description: Orchestrated plan execution with selective sub-agent dispatch
+argument-hint: <plan-name> [tasks]
 arguments:
   - name: plan
     description: Plan filename or path (e.g., "hashtag-budget-strategy" or full path)
