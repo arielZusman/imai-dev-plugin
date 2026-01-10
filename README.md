@@ -1,6 +1,19 @@
-# Plan Execution Framework
+# imai-dev
 
-A Claude Code plugin for structured plan creation, validation, and execution with checkpointing.
+A Claude Code plugin for structured plan creation, validation, and execution with checkpoint-based session management.
+
+## Installation
+
+### From Directory
+
+```bash
+# Clone or download the plugin
+claude --plugin-dir /path/to/imai-dev
+```
+
+### Project-Local
+
+Copy to your project's `.claude-plugin/` directory for automatic loading.
 
 ## Overview
 
@@ -14,24 +27,24 @@ This plugin provides a complete workflow for managing implementation plans:
 
 ```bash
 # 1. Prime session with project context
-/prime
+/imai-dev:prime
 
 # 2. Create a plan with Claude (plan mode)
 "Help me implement feature X"
 # Claude creates plan in ~/.claude/plans/
 
 # 3. Enrich the plan for standalone execution
-/generate-plan my-feature
+/imai-dev:generate-plan my-feature
 
 # 4. Validate against codebase patterns
-/validate-plan
+/imai-dev:validate-plan
 
 # 5. Execute with orchestration
-/execute-plan my-feature
+/imai-dev:execute-plan my-feature
 
 # 6. When rotation is recommended (after 4 tasks or 30 min)
 # Clear session, then:
-/resume-plan my-feature
+/imai-dev:resume-plan my-feature
 ```
 
 ---
@@ -40,15 +53,12 @@ This plugin provides a complete workflow for managing implementation plans:
 
 | Command | Description | Usage |
 |---------|-------------|-------|
-| `/prime` | Prime session with git context | `/prime` |
-| `/prime-plan` | Load plan and task context | `/prime-plan [task-id]` |
-| `/generate-plan` | Enrich plan for standalone execution | `/generate-plan [plan-path]` |
-| `/validate-plan` | Validate plan against codebase | `/validate-plan [plan-path]` |
-| `/execute-plan` | Execute plan with orchestration | `/execute-plan <plan> [tasks]` |
-| `/checkpoint` | Save execution checkpoint | `/checkpoint <plan> <task> <status>` |
-| `/resume-plan` | Resume plan from checkpoint | `/resume-plan <plan> [task-id]` |
-
-**Note:** Each command file is self-contained with complete execution instructions. Claude Code reads the command file directly when invoked.
+| `prime` | Prime session with git context | `/imai-dev:prime` |
+| `generate-plan` | Enrich plan for standalone execution | `/imai-dev:generate-plan [plan-path]` |
+| `validate-plan` | Validate plan against codebase | `/imai-dev:validate-plan [plan-path]` |
+| `execute-plan` | Execute plan with orchestration | `/imai-dev:execute-plan <plan> [tasks]` |
+| `checkpoint` | Save execution checkpoint | `/imai-dev:checkpoint <plan> <task> <status>` |
+| `resume-plan` | Resume plan from checkpoint | `/imai-dev:resume-plan <plan> [task-id]` |
 
 ---
 
@@ -56,8 +66,8 @@ This plugin provides a complete workflow for managing implementation plans:
 
 | Agent | Purpose | Trigger |
 |-------|---------|---------|
-| `plan-enricher` | Enriches plans with inline context | Via `/generate-plan` |
-| `plan-validator` | Validates plans against architecture | Via `/validate-plan` |
+| `plan-enricher` | Enriches plans with inline context | Via `generate-plan` command |
+| `plan-validator` | Validates plans against architecture | Via `validate-plan` command |
 
 ---
 
@@ -86,7 +96,6 @@ This plugin provides a complete workflow for managing implementation plans:
 ### Skill Recommendations
 - Plans include recommended skills per task
 - Checks all available skills (own + plugins + built-in)
-- Examples: `superpowers:test-driven-development`, `superpowers:systematic-debugging`
 
 ### Fork Mode
 - `generate-implementation-plan` runs in isolated forked context
@@ -106,7 +115,7 @@ This plugin provides a complete workflow for managing implementation plans:
 
 ---
 
-## Dispatch Decisions (for /execute-plan)
+## Dispatch Decisions (for execute-plan)
 
 | Task Type | Execution | Rationale |
 |-----------|-----------|-----------|
@@ -129,25 +138,62 @@ This plugin provides a complete workflow for managing implementation plans:
 
 ---
 
-## Directory Structure
+## Directory Conventions
+
+This plugin expects the following directory structure in your project:
 
 ```
-.claude/
+project/
+├── docs/
+│   └── plans/              # Enriched plans stored here
+│       └── .state/         # Checkpoint files
+```
+
+Plans are read from `~/.claude/plans/` and enriched versions are saved to `docs/plans/`.
+
+---
+
+## Dependencies
+
+This plugin works best with the following optional plugins:
+
+### superpowers (Recommended)
+Provides skills referenced in plan task recommendations:
+- `superpowers:test-driven-development`
+- `superpowers:systematic-debugging`
+- `superpowers:brainstorming`
+
+### pr-review-toolkit (Recommended)
+Provides code review capability used in the execution workflow:
+- `/pr-review-toolkit:review-pr` - Called after each task completion
+
+---
+
+## Plugin Structure
+
+```
+imai-dev/
+├── .claude-plugin/
+│   └── plugin.json
 ├── agents/
 │   ├── plan-enricher.md
 │   └── plan-validator.md
 ├── commands/
-│   ├── checkpoint.md          # Self-contained execution instructions
-│   ├── execute-plan.md        # Self-contained execution instructions
+│   ├── checkpoint.md
+│   ├── execute-plan.md
 │   ├── generate-plan.md
-│   ├── prime-plan.md
 │   ├── prime.md
-│   ├── resume-plan.md         # Self-contained execution instructions
+│   ├── resume-plan.md
 │   └── validate-plan.md
 ├── skills/
 │   ├── generate-implementation-plan/
 │   ├── handoff-summary/
 │   └── session-management/
-├── settings.local.json
 └── README.md
 ```
+
+---
+
+## License
+
+MIT
