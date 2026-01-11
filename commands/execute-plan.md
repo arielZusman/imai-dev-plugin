@@ -14,13 +14,27 @@ arguments:
 
 Orchestrated execution of an enriched implementation plan. Runs in main session, selectively dispatches complex tasks to sub-agents.
 
+## CRITICAL: Directory Safety
+
+**Before EVERY `npm`, `ng`, or package manager command:**
+```bash
+# ALWAYS verify you're in the correct directory
+pwd
+# If not in target directory, cd first:
+cd <plan-target-directory>
+```
+
+**Why this matters:** Running `npm install` in the wrong directory corrupts the wrong `package.json`. This is a HIGH SEVERITY issue that has caused real problems.
+
+---
+
 ## Overview
 
 This command implements **lean orchestration**:
 - Simple tasks execute directly in main session (low overhead)
 - Complex tasks dispatch to specialist sub-agents (context isolation)
 - Parallel-eligible tasks can run concurrently via multiple sub-agents
-- Checkpoint updates after each task
+- Checkpoint updates after each task (MANDATORY - do not skip)
 - Rotation recommendations based on task count/time
 
 ## Step 1: Load Plan and State
@@ -42,20 +56,33 @@ Checkpoint: docs/plans/.state/<plan-slug>.checkpoint.md
 
 ## Step 2: Pre-Flight Verification
 
-Before starting any task:
+Before starting any task, run ALL of these checks:
 
 ```bash
-# Verify build passes
+# 1. Verify correct directory (CRITICAL)
+pwd  # Must match plan's target directory
+cd <plan-target-directory>  # If not already there
+
+# 2. Verify build passes
 npm run build
 
-# Verify test baseline
+# 3. Verify test baseline (establishes what should pass)
 npm run test
 
-# Check working tree
+# 4. Check working tree is clean
 git status
 ```
 
-**If pre-flight fails:**
+**Output a status summary:**
+```
+Pre-flight check:
+- Directory: ✅ /path/to/target
+- Build: ✅ passed
+- Tests: ✅ X passed, Y skipped
+- Git: ✅ clean working tree
+```
+
+**If ANY pre-flight step fails:**
 - Report failure with details
 - Do NOT proceed
 - Suggest: "Fix issues and re-run `/execute-plan`"
@@ -79,21 +106,37 @@ Check task's `Dispatch` field or use default rules:
 
 ### 3.2 Execute Task
 
+**MANDATORY for EVERY task - use this checklist:**
+
+```
+Task [N] Checklist:
+□ CHECKPOINT: /checkpoint <plan> <task> started
+□ DIRECTORY: pwd shows correct target directory
+□ IMPLEMENT: Execute task steps
+□ VERIFY: Run task's verification command
+□ REVIEW: /pr-review-toolkit:review-pr staged  ← DO NOT SKIP
+□ FIX: Address critical issues (max 2 iterations)
+□ COMMIT: git commit with descriptive message
+□ CHECKPOINT: /checkpoint <plan> <task> completed
+```
+
 **If executing directly:**
 
-1. Run `/checkpoint <plan> <task> started`
-2. Read task's Context Requirements (required files)
-3. Execute task steps as written in plan
-4. Run task's Verify step
-5. Run code review: `/pr-review-toolkit:review-pr <scope>`
-6. Fix critical issues (max 2 iterations)
-7. Commit with descriptive message
-8. Run `/checkpoint <plan> <task> completed`
-9. Provide handoff notes when prompted
+1. **CHECKPOINT START:** Run `/checkpoint <plan> <task> started`
+2. **VERIFY DIRECTORY:** Run `pwd` - must be in plan's target directory
+3. Read task's Context Requirements (required files)
+4. Execute task steps as written in plan
+5. Run task's Verify step
+6. **CODE REVIEW (MANDATORY):** Run `/pr-review-toolkit:review-pr staged`
+   - This is NOT optional - review catches issues before they compound
+7. Fix critical issues (max 2 iterations)
+8. Commit with descriptive message
+9. **CHECKPOINT COMPLETE:** Run `/checkpoint <plan> <task> completed`
+10. Provide handoff notes when prompted
 
 **If dispatching to sub-agent:**
 
-1. Run `/checkpoint <plan> <task> started`
+1. **CHECKPOINT START:** Run `/checkpoint <plan> <task> started`
 2. Build task prompt (see "Sub-Agent Prompt Template" below)
 3. Dispatch via Task tool:
    ```
@@ -106,10 +149,10 @@ Check task's `Dispatch` field or use default rules:
 5. Verify sub-agent results:
    - Check files were modified as expected
    - Run verification step
-   - Run code review
+   - **Run code review** (MANDATORY)
 6. If verification fails: retry once with feedback, then mark blocked
 7. Commit changes
-8. Run `/checkpoint <plan> <task> completed`
+8. **CHECKPOINT COMPLETE:** Run `/checkpoint <plan> <task> completed`
 
 ### 3.3 Handle Parallel Tasks
 
@@ -136,25 +179,43 @@ parallel_groups:
 
 ## Step 4: Rotation Management
 
-After each task completion, check rotation heuristic:
-
-**Triggers:**
-- `tasks_completed_this_session >= 4`
-- Elapsed time > 30 minutes since session start
-
-**If triggered:**
+**Track progress in your todo list with task count:**
 ```
-⚠️ Rotation recommended after [N] tasks.
+Example todo list format:
+- [x] Task 1: Update dependencies (1/6)
+- [x] Task 2: Fix imports (2/6)
+- [x] Task 3: Update config (3/6)
+- [ ] Task 4: Run migrations (4/6) ⚠️ ROTATION RECOMMENDED
+- [ ] Task 5: Update tests (5/6)
+- [ ] Task 6: Final verification (6/6)
+```
+
+**After EACH task completion, check rotation heuristic:**
+
+**Triggers (check BOTH):**
+- `tasks_completed_this_session >= 4` → Output rotation warning
+- Elapsed time > 30 minutes since session start → Output rotation warning
+
+**If triggered, you MUST output:**
+```
+⚠️ ROTATION RECOMMENDED
+
+Tasks completed this session: [N]
+Time elapsed: [X] minutes
+
+Continuing without rotation may lead to:
+- Context degradation
+- Increased error rate
+- Missed instructions
 
 Options:
-1. Continue with current task (not recommended)
-2. Pause execution, save checkpoint, rotate session
+1. Continue (not recommended)
+2. Pause and rotate: /checkpoint <plan> <task> completed, then start new session
 
-To resume after rotation:
-/resume-plan <plan-path>
+To resume: /resume-plan <plan-path>
 ```
 
-**If user continues:** proceed but warn again after next task.
+**If user continues:** proceed but warn again after EVERY subsequent task.
 
 ## Step 5: Completion
 
