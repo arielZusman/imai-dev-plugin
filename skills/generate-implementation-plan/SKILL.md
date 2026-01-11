@@ -6,8 +6,9 @@ description: |
 
   Use after creating a plan, or when preparing plans for fresh sessions
   where inline context is essential for execution.
-context: fork
-agent: Plan
+metadata:
+  context: fork
+  agent: Plan
 ---
 
 # Generate Implementation Plan
@@ -18,7 +19,7 @@ agent: Plan
 
 1. Identify plan from `~/.claude/plans/`
 2. Read and gather context for referenced files
-3. Apply template from [TEMPLATE.md](TEMPLATE.md)
+3. Apply template from [TEMPLATE.md](assets/TEMPLATE.md)
 4. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`
 5. Update `docs/plans/INDEX.md`
 
@@ -79,7 +80,7 @@ When a specialist agent would benefit a task, recommend it. Common patterns:
 
 | Task Type | Agent Type | When to Use |
 |-----------|------------|-------------|
-| Test writing | `test-writer` | TDD test design needs fresh context |
+| Test writing | `general-purpose` | TDD with fresh context, invoke skill first |
 | Complex implementation | `general-purpose` | Context isolation benefit |
 | Code exploration | `Explore` | Understanding unfamiliar code |
 | Architecture decisions | `Plan` | Design decisions, trade-offs |
@@ -106,10 +107,10 @@ Without these, executors will skip reviews because the instructions are too far 
 
 ## References
 
-- **Plan template**: [TEMPLATE.md](TEMPLATE.md)
-- **Enrichment checklist**: [ENRICHMENT-CHECKLIST.md](ENRICHMENT-CHECKLIST.md)
-- **Failure modes examples**: [FAILURE-MODES-EXAMPLES.md](FAILURE-MODES-EXAMPLES.md)
-- **Execution guide**: [EXECUTION-GUIDE.md](EXECUTION-GUIDE.md)
+- **Plan template**: [TEMPLATE.md](assets/TEMPLATE.md)
+- **Enrichment checklist**: [ENRICHMENT-CHECKLIST.md](references/ENRICHMENT-CHECKLIST.md)
+- **Failure modes examples**: [FAILURE-MODES-EXAMPLES.md](references/FAILURE-MODES-EXAMPLES.md)
+- **Execution guide**: [EXECUTION-GUIDE.md](references/EXECUTION-GUIDE.md)
 
 ## Execution Handoff
 

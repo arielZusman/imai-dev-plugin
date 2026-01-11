@@ -118,9 +118,9 @@ Guide the `/execute-plan` command on whether to run task directly or dispatch to
 |----------|----------|-----------|
 | < 50 lines changed | `direct` | Low overhead wins |
 | Config/env changes | `direct` | Trivial, no isolation benefit |
-| TDD test writing | `sub-agent (test-writer)` | Fresh context prevents impl bias |
-| Complex implementation | `sub-agent (implementer)` | Isolation prevents context rot |
-| Code review | `sub-agent (code-reviewer)` | Already isolated workflow |
+| TDD test writing | `sub-agent (general-purpose)` | Fresh context prevents impl bias |
+| Complex implementation | `sub-agent (general-purpose)` | Isolation prevents context rot |
+| Code review | `sub-agent (pr-review-toolkit:code-reviewer)` | Already isolated workflow |
 | Parallel-eligible | `sub-agent` | Required for parallelism |
 
 **Orchestration Hints section format:**
@@ -135,8 +135,8 @@ Guide the `/execute-plan` command on whether to run task directly or dispatch to
 | Task | Dispatch | Rationale |
 |------|----------|-----------|
 | 1 | direct | Interface definitions, < 20 lines |
-| 2 | sub-agent (test-writer) | TDD red phase |
-| 3 | sub-agent (implementer) | Complex algorithm |
+| 2 | sub-agent (general-purpose) | TDD red phase |
+| 3 | sub-agent (general-purpose) | Complex algorithm |
 | 4 | direct | Config update |
 ```
 

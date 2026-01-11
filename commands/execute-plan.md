@@ -345,6 +345,37 @@ Rationale: Config change, trivial
 
 ---
 
+## Handling Pre-Commit Hooks
+
+When committing, pre-commit hooks may fail. Follow these guidelines:
+
+**When bypass is ACCEPTABLE (`--no-verify`):**
+- Pre-existing lint errors not introduced by your changes
+- Formatting issues from automated tools (prettier, eslint --fix)
+- Hook runs checks unrelated to your changes (e.g., unmodified files)
+
+**When bypass is NOT acceptable:**
+- New lint errors in files you modified
+- Type errors in your code
+- Failing tests
+- Security vulnerabilities flagged by hooks
+
+**Decision flow:**
+```
+Hook failed → Check if error is in files YOU modified
+  ├── Yes → Fix the issue, do NOT bypass
+  └── No → Ask user: "Pre-commit hook failed on pre-existing issues. Bypass with --no-verify?"
+```
+
+**If user approves bypass:**
+```bash
+git commit --no-verify -m "your message"
+```
+
+**Document bypasses:** Add note to Execution Log: "Committed with --no-verify due to [reason]"
+
+---
+
 ## Examples
 
 **Execute entire plan from current position:**

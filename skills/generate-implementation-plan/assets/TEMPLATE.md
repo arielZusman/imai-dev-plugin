@@ -164,8 +164,8 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 | Task | Dispatch | Rationale |
 |------|----------|-----------|
 | Task 1 | direct | Simple, < 50 lines |
-| Task 2 | sub-agent (test-writer) | TDD test writing |
-| Task 3 | sub-agent (implementer) | Complex implementation |
+| Task 2 | sub-agent (general-purpose) | TDD test writing |
+| Task 3 | sub-agent (general-purpose) | Complex implementation |
 | Task N | direct | Config/trivial change |
 
 **Dispatch guidelines:**
