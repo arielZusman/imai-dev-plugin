@@ -18,6 +18,15 @@ Claude Code sessions degrade over time due to:
 
 **Research finding:** Replacing 113k-token history with focused 300-token context boosted accuracy by 30%.
 
+## Claude 4.5 Context Awareness
+
+Claude 4.5 can track its remaining token budget. When approaching limits:
+- Save progress to checkpoint before context compacts
+- Do not artificially stop work early due to budget concerns
+- Context will be automatically compacted, allowing continuation from where you left off
+
+This means you can work persistently on long tasks. The rotation heuristics below help maintain quality, not just manage token limits.
+
 ## Rotation Triggers
 
 ### Hard Triggers (Always Rotate)
@@ -64,6 +73,9 @@ Watch for these signs that session quality is degrading:
 
 ## Rotation Protocol
 
+<mandatory_rotation_protocol>
+Do not skip these steps when rotating. Incomplete handoffs cause context loss.
+
 ### Before Rotating
 
 1. **Save checkpoint:**
@@ -105,6 +117,7 @@ Watch for these signs that session quality is degrading:
    - Review handoff notes
    - Check recent session_log entries
    - Verify you know what to do next
+</mandatory_rotation_protocol>
 
 ## Heuristic Decision Tree
 

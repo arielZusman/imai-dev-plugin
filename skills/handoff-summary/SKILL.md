@@ -40,6 +40,11 @@ Generate this structure:
 
 ### Current State
 
+> Run these commands before filling in this section. Do not guess.
+> ```bash
+> npm run build && npm run test && git status
+> ```
+
 - **Build:** pass | fail (reason)
 - **Tests:** X/Y passing (note expected failures)
 - **Uncommitted Changes:** [list files or "none"]

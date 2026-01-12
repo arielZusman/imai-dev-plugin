@@ -14,17 +14,15 @@ arguments:
 
 Orchestrated execution of an enriched implementation plan. Runs in main session, selectively dispatches complex tasks to sub-agents.
 
-## CRITICAL: Directory Safety
+## Directory Safety
 
-**Before EVERY `npm`, `ng`, or package manager command:**
+Before running `npm`, `ng`, or package manager commands, verify the correct directory:
 ```bash
-# ALWAYS verify you're in the correct directory
 pwd
-# If not in target directory, cd first:
-cd <plan-target-directory>
+cd <plan-target-directory>  # if needed
 ```
 
-**Why this matters:** Running `npm install` in the wrong directory corrupts the wrong `package.json`. This is a HIGH SEVERITY issue that has caused real problems.
+Running commands in the wrong directory corrupts the wrong `package.json`.
 
 ---
 
@@ -93,6 +91,10 @@ For each task in scope (respecting dependency order):
 
 ### 3.1 Evaluate Dispatch Decision
 
+<investigate_before_answering>
+Read the task's actual Dispatch field before deciding. Do not assume dispatch mode based on task title alone.
+</investigate_before_answering>
+
 Check task's `Dispatch` field or use default rules:
 
 | Condition | Decision | Rationale |
@@ -106,7 +108,7 @@ Check task's `Dispatch` field or use default rules:
 
 ### 3.2 Execute Task
 
-**MANDATORY for EVERY task - use this checklist:**
+Use this checklist for every task:
 
 ```
 Task [N] Checklist:
@@ -114,29 +116,33 @@ Task [N] Checklist:
 □ DIRECTORY: pwd shows correct target directory
 □ IMPLEMENT: Execute task steps
 □ VERIFY: Run task's verification command
-□ REVIEW: /pr-review-toolkit:review-pr staged  ← DO NOT SKIP
+□ REVIEW: /pr-review-toolkit:review-pr staged
 □ FIX: Address critical issues (max 2 iterations)
 □ COMMIT: git commit with descriptive message
 □ CHECKPOINT: /checkpoint <plan> <task> completed
 ```
 
+<mandatory_code_review>
+Code review after each task is not optional. Reviews catch issues before they compound across tasks.
+Run `/pr-review-toolkit:review-pr staged` before committing.
+</mandatory_code_review>
+
 **If executing directly:**
 
-1. **CHECKPOINT START:** Run `/checkpoint <plan> <task> started`
-2. **VERIFY DIRECTORY:** Run `pwd` - must be in plan's target directory
+1. Run `/checkpoint <plan> <task> started`
+2. Verify directory with `pwd` - must be in plan's target directory
 3. Read task's Context Requirements (required files)
 4. Execute task steps as written in plan
 5. Run task's Verify step
-6. **CODE REVIEW (MANDATORY):** Run `/pr-review-toolkit:review-pr staged`
-   - This is NOT optional - review catches issues before they compound
+6. Run `/pr-review-toolkit:review-pr staged` (see mandatory_code_review above)
 7. Fix critical issues (max 2 iterations)
 8. Commit with descriptive message
-9. **CHECKPOINT COMPLETE:** Run `/checkpoint <plan> <task> completed`
+9. Run `/checkpoint <plan> <task> completed`
 10. Provide handoff notes when prompted
 
 **If dispatching to sub-agent:**
 
-1. **CHECKPOINT START:** Run `/checkpoint <plan> <task> started`
+1. Run `/checkpoint <plan> <task> started`
 2. Build task prompt (see "Sub-Agent Prompt Template" below)
 3. Dispatch via Task tool:
    ```
@@ -149,10 +155,10 @@ Task [N] Checklist:
 5. Verify sub-agent results:
    - Check files were modified as expected
    - Run verification step
-   - **Run code review** (MANDATORY)
+   - Run code review (see mandatory_code_review above)
 6. If verification fails: retry once with feedback, then mark blocked
 7. Commit changes
-8. **CHECKPOINT COMPLETE:** Run `/checkpoint <plan> <task> completed`
+8. Run `/checkpoint <plan> <task> completed`
 
 ### 3.3 Handle Parallel Tasks
 
@@ -178,6 +184,8 @@ parallel_groups:
 **Note:** True parallelism requires multiple Task tool calls in same message.
 
 ## Step 4: Rotation Management
+
+Rotation prevents context degradation after sustained work. As context fills, attention to recent instructions decreases and error rates increase.
 
 **Track progress in your todo list with task count:**
 ```

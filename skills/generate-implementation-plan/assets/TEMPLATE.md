@@ -7,7 +7,10 @@ Copy this template when enriching a plan. Fill in all bracketed sections.
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For Claude:** Execute this plan task-by-task. All context needed is included below.
+<execution_context>
+Execute this plan task-by-task. All context needed is included below.
+Implement changes directly. Do not suggest or ask for confirmation unless blocked.
+</execution_context>
 
 ## Project Context
 
@@ -28,7 +31,8 @@ Copy this template when enriching a plan. Fill in all bracketed sections.
 
 ## Execution Workflow
 
-> **MANDATORY:** Follow this workflow for EVERY task. Do not skip steps.
+<mandatory_workflow>
+Follow this workflow for EVERY task. Do not skip steps.
 
 ### Per-Task Cycle
 
@@ -67,6 +71,7 @@ Mark status as `⛔ Blocked` with notes. Do NOT proceed to next task.
 ### Final Review
 
 After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review" row.
+</mandatory_workflow>
 
 ---
 
@@ -92,6 +97,8 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 
 ### Task 1: [Title]
 
+**Why:** [Business reason this task matters - helps Claude understand intent]
+
 **Complexity:** 🟢 Simple | 🟡 Moderate | 🔴 Complex
 **Depends on:** None | Task N, Task M
 **Parallel group:** A | — (sequential)
@@ -101,6 +108,8 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
   - [What the skill provides]
 
 **Context Requirements:**
+> ALWAYS read these files before implementing. Do not speculate about code you haven't opened.
+
 - **Required** (must re-read before starting):
   - `exact/path/to/file.ts` - sections: [functionName, className]
   - `exact/path/to/types.ts` - all
@@ -116,6 +125,7 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 2. [Command: "Run tests to verify"]
 
 **Verify:** [How to confirm this task is complete]
+**Verification Method:** Manual test | Automated test | MCP tool | Build check
 
 **Review scope:** [Files modified in this task]
 
@@ -171,6 +181,7 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 **Dispatch guidelines:**
 - `direct`: Simple edits, config changes, < 50 lines modified
 - `sub-agent`: TDD tests, complex implementation, code review
+- Only delegate to sub-agents when the task clearly benefits from a separate agent with a new context window
 
 ---
 
@@ -182,6 +193,7 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 
 ## Gotchas & Warnings
 
+- **Do not hardcode values** to make tests pass. Implement the actual logic that solves the problem generally.
 - [Any non-obvious issues to watch for]
 - [Dependencies or order-of-operations concerns]
 

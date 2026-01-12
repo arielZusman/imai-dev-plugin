@@ -49,6 +49,10 @@ Resume execution of an enriched implementation plan with checkpoint-aware contex
 
 ## Step 3: Load Task-Specific Context
 
+<investigate_before_answering>
+Read the actual Context Requirements from the checkpoint or plan. Do not guess file paths or assume what context is needed.
+</investigate_before_answering>
+
 **From checkpoint (preferred):**
 
 Read the `Context Requirements` section for current task:
@@ -76,14 +80,14 @@ Before starting implementation:
    ```bash
    npm run build
    ```
-   If fails: stop and report. Don't proceed with broken build.
+   If build fails: you MUST NOT proceed. A broken build baseline makes verification unreliable. Report failure and stop.
 
 2. **Check test status:**
    ```bash
    npm run test
    ```
    Compare against checkpoint's `last_verification.tests`.
-   - If more failures than expected: investigate before proceeding
+   - If more failures than expected: MUST NOT proceed until investigated - unexpected failures indicate regression
    - If matches expected: continue
 
 3. **Check for uncommitted changes:**

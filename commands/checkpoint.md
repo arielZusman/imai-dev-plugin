@@ -31,6 +31,10 @@ Save or update a checkpoint file for the current plan execution.
 
 ## Instructions
 
+<investigate_before_answering>
+Read the existing checkpoint file before updating. Do not assume current state - verify actual task progress and session counts from the file.
+</investigate_before_answering>
+
 When this command is invoked:
 
 1. **Parse the plan path** to derive checkpoint location:
@@ -47,7 +51,7 @@ When this command is invoked:
    - Add session_log entry: `task_started`
 
    **If `completed`:**
-   - Prompt for verification results (build status, test status)
+   - Run `npm run build` and `npm run test` to get actual results - do not ask user to describe status
    - Prompt for handoff notes (what the next task needs to know)
    - Add task to Completed Tasks section
    - Increment `tasks_completed_this_session`
