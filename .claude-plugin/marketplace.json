@@ -1,0 +1,23 @@
+{
+  "name": "imai-dev-marketplace",
+  "owner": {
+    "name": "Ariel"
+  },
+  "metadata": {
+    "description": "Plan execution framework with checkpoint-based session management",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "imai-dev",
+      "description": "Plan execution framework with checkpoint-based session management, context loading, and orchestrated task dispatch",
+      "version": "1.0.1",
+      "author": {
+        "name": "Ariel"
+      },
+      "source": "./",
+      "category": "workflow",
+      "tags": ["planning", "execution", "checkpoints", "session-management"]
+    }
+  ]
+}

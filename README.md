@@ -4,16 +4,20 @@ A Claude Code plugin for structured plan creation, validation, and execution wit
 
 ## Installation
 
-### From Directory
-
-```bash
-# Clone or download the plugin
-claude --plugin-dir /path/to/imai-dev
+### Via Marketplace
+```
+/plugin marketplace add <your-github-username>/imai-dev-plugin
 ```
 
-### Project-Local
+### Direct Git Install
+```
+/plugin add github:<your-github-username>/imai-dev-plugin
+```
 
-Copy to your project's `.claude-plugin/` directory for automatic loading.
+### From Local Directory
+```bash
+claude --plugin-dir /path/to/imai-dev-plugin
+```
 
 ## Overview
 
