@@ -30,3 +30,25 @@ grep -c "/checkpoint.*completed" docs/plans/*.md
 ```
 
 If any task is missing these elements, the enrichment failed. Re-run or manually fix.
+
+## Task Scoping Validation
+
+**"One Sentence Without 'And'" Rule:**
+
+Each task MUST be describable in one sentence without conjoining unrelated work:
+- ✓ "Update Angular core to v19" → properly scoped
+- ✗ "Update Angular and fix lint errors and migrate SCSS" → should be 3 tasks
+
+**Validation check:**
+Review each task title. If it contains "and" connecting unrelated capabilities, the task is too broad.
+
+```
+For each task in plan:
+  - Can it be described without "and"?
+  - Does it have ONE clear outcome?
+  - Will it result in ONE logical commit?
+
+If NO to any: Break into separate tasks
+```
+
+This ensures each task = one focus = one commit = one review cycle.

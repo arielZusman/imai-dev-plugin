@@ -20,7 +20,7 @@ Copy to your project's `.claude-plugin/` directory for automatic loading.
 This plugin provides a complete workflow for managing implementation plans:
 
 ```
-/prime → /generate-plan → /validate-plan → /execute-plan → /checkpoint → /resume-plan
+/prime → /generate-plan → /validate-plan → /execute-plan → /checkpoint
 ```
 
 ## Quick Start
@@ -42,9 +42,8 @@ This plugin provides a complete workflow for managing implementation plans:
 # 5. Execute with orchestration
 /imai-dev:execute-plan my-feature
 
-# 6. When rotation is recommended (after 4 tasks or 30 min)
-# Clear session, then:
-/imai-dev:resume-plan my-feature
+# 6. When rotation is recommended, clear session and re-run:
+/imai-dev:execute-plan my-feature
 ```
 
 ---
@@ -58,7 +57,6 @@ This plugin provides a complete workflow for managing implementation plans:
 | `validate-plan` | Validate plan against codebase | `/imai-dev:validate-plan [plan-path]` |
 | `execute-plan` | Execute plan with orchestration | `/imai-dev:execute-plan <plan> [tasks]` |
 | `checkpoint` | Save execution checkpoint | `/imai-dev:checkpoint <plan> <task> <status>` |
-| `resume-plan` | Resume plan from checkpoint | `/imai-dev:resume-plan <plan> [task-id]` |
 
 ---
 
@@ -183,7 +181,6 @@ imai-dev/
 │   ├── execute-plan.md
 │   ├── generate-plan.md
 │   ├── prime.md
-│   ├── resume-plan.md
 │   └── validate-plan.md
 ├── skills/
 │   ├── generate-implementation-plan/

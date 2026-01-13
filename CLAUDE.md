@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 imai-dev is a Claude Code plugin for structured plan creation, validation, and execution with checkpoint-based session management. It provides a complete workflow:
 
 ```
-/prime → /generate-plan → /validate-plan → /execute-plan → /checkpoint → /resume-plan
+/prime → /generate-plan → /validate-plan → /execute-plan → /checkpoint
 ```
 
 ## Plugin Architecture
@@ -35,13 +35,25 @@ Tasks are executed directly or via sub-agents based on complexity:
 - **Direct**: Simple edits (< 50 lines), config changes
 - **Sub-agent**: TDD tests, complex implementation, code review
 
-### Session Rotation Heuristics
+### Session Management: One Task Per Session
 
-| Trigger | Action |
-|---------|--------|
-| 4+ tasks completed | Rotate after current task |
-| 30+ minutes elapsed | Rotate after current task |
+**Stop after EACH task.** This is mandatory, not a recommendation.
+
+| Event | Action |
+|-------|--------|
+| Task completed | Checkpoint → Review → Commit → **STOP** |
 | 3+ consecutive failures | Rotate immediately |
+
+To continue: User runs `/execute-plan <plan-name>` in fresh session (checkpoint state loads automatically).
+
+**Why:** Fresh context per task ensures code review cannot be skipped and prevents context degradation.
+
+### Hard Blocks
+
+**NEVER use `--no-verify` without explicit user consent:**
+- If pre-commit hook fails, STOP and ask user via AskUserQuestion
+- Only bypass if user explicitly approves
+- Document all bypasses in checkpoint
 
 ## File Conventions
 
@@ -87,6 +99,14 @@ agent: Plan    # optional, agent type for fork mode
 ### Mandatory Review Workflow
 
 The enriched plan template embeds `/pr-review-toolkit:review-pr` after each task. This is intentionally placed in per-task checklists, not just at the end, to prevent skipping.
+
+### Task Scoping: "One Sentence Without 'And'"
+
+Each task MUST be describable in one sentence without conjoining unrelated work:
+- ✓ "Update Angular core to v19" → properly scoped
+- ✗ "Update Angular and fix lint errors" → should be 2 tasks
+
+If a task requires "and" to describe, break it into separate tasks. Each task = one focus = one commit = one review cycle.
 
 ## Dependencies
 

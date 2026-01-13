@@ -165,5 +165,5 @@ Plans should reference checkpoint workflow in execution steps.
 After 4 tasks or 30 minutes, consider rotating session:
 1. Run `/checkpoint` to save state
 2. Clear session
-3. Run `/resume-plan <plan-path>` in fresh session
+3. Run `/execute-plan <plan-name>` in fresh session
 ```

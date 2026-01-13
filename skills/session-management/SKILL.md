@@ -27,25 +27,42 @@ Claude 4.5 can track its remaining token budget. When approaching limits:
 
 This means you can work persistently on long tasks. The rotation heuristics below help maintain quality, not just manage token limits.
 
-## Rotation Triggers
+## Session Start: Plan/Checkpoint Detection
 
-### Hard Triggers (Always Rotate)
+When starting a session, check for existing plans and checkpoints:
 
-| Trigger | Detection | Action |
-|---------|-----------|--------|
-| **4+ tasks completed** | Checkpoint counter | Rotate after current task |
-| **30+ minutes elapsed** | Session start time | Rotate after current task |
-| **Major error recovery** | 3+ failed attempts | Rotate immediately |
-| **Context feels wrong** | Repeating yourself, wrong assumptions | Rotate immediately |
+```
+On session start:
+1. Check docs/plans/ for enriched plan files
+2. Check docs/plans/.state/ for checkpoint files
+3. If checkpoint exists with incomplete tasks:
+   → Output: "Resume available: /execute-plan <plan-name>"
+4. If plan exists but no checkpoint:
+   → Output: "Plan ready: /execute-plan <plan-path>"
+5. If multiple plans/checkpoints:
+   → List all with status, let user choose
+```
 
-### Soft Triggers (Consider Rotating)
+This ensures continuity across sessions.
 
-| Trigger | Detection | Action |
-|---------|-----------|--------|
-| **2-3 tasks completed** | Checkpoint counter | Continue if simple tasks ahead |
-| **15-30 minutes elapsed** | Session start time | Continue if nearly done |
-| **One complex task done** | 🔴 complexity completed | Evaluate remaining work |
-| **Switching domains** | Frontend → Backend, etc. | Rotate for fresh context |
+## Rotation Strategy: One Task Per Session
+
+**Stop after EACH task.** This is not optional.
+
+| Event | Action |
+|-------|--------|
+| **Task completed** | Save checkpoint → Code review → Commit → **STOP** |
+| **Major error recovery** | 3+ failed attempts → Rotate immediately |
+| **Context feels wrong** | Repeating yourself, wrong assumptions → Rotate immediately |
+
+### Why One Task Per Session?
+
+- **Fresh context** - Each task starts with focused attention
+- **Code review cannot be skipped** - Stopping forces the review step
+- **Checkpoint always current** - No state loss on session clear
+- **Failures isolated** - One task's errors don't compound
+
+This aligns with Ralph's core insight: tight scope + backpressure + fresh context = reliable execution.
 
 ## Symptoms of Context Rot
 
@@ -102,7 +119,7 @@ Do not skip these steps when rotating. Incomplete handoffs cause context loss.
 
 2. **In fresh session, run:**
    ```
-   /resume-plan <plan-path>
+   /execute-plan <plan-name>
    ```
    This loads checkpoint and provides focused context.
 
@@ -124,97 +141,111 @@ Do not skip these steps when rotating. Incomplete handoffs cause context loss.
 ```
 Session started
     │
-    ├─ Task completed?
+    ├─ Task completed? ──→ STOP (mandatory)
     │   │
-    │   ├─ Tasks this session >= 4? ──→ ROTATE
-    │   │
-    │   ├─ Time elapsed > 30 min? ──→ ROTATE
-    │   │
-    │   ├─ Tasks this session = 3?
-    │   │   │
-    │   │   ├─ Next task is 🔴 complex? ──→ ROTATE
-    │   │   └─ Next task is 🟢 simple? ──→ CONTINUE
-    │   │
-    │   └─ Tasks this session < 3? ──→ CONTINUE
+    │   └─ Checkpoint saved?
+    │       ├─ Yes ──→ Output resume instructions
+    │       └─ No ──→ ERROR: Save checkpoint first
     │
     ├─ Error occurred?
     │   │
-    │   ├─ 3+ consecutive failures? ──→ ROTATE
-    │   └─ Recoverable error? ──→ CONTINUE (checkpoint error)
+    │   ├─ 3+ consecutive failures? ──→ ROTATE immediately
+    │   └─ Recoverable error? ──→ Fix, then complete task
     │
-    └─ User reports confusion? ──→ ROTATE
+    └─ User reports confusion? ──→ ROTATE immediately
 ```
+
+**Note:** The old "4 tasks / 30 min" heuristic is replaced by "one task per session". This is simpler and more reliable.
 
 ## Task Budgeting
 
-When starting a plan, estimate tasks per session:
+**One task per session.** This simplifies planning:
 
-| Task Complexity | Tasks Per Session |
-|-----------------|-------------------|
-| All 🟢 Simple | 4-5 tasks |
-| Mixed 🟢/🟡 | 3-4 tasks |
-| Includes 🔴 Complex | 2-3 tasks |
-| All 🔴 Complex | 1-2 tasks |
+| Plan Size | Sessions Needed |
+|-----------|-----------------|
+| 5 tasks | 5 sessions |
+| 10 tasks | 10 sessions |
+| 20 tasks | 20 sessions |
 
 **Planning example:**
 ```
-Plan: 12 tasks (4 🟢, 6 🟡, 2 🔴)
+Plan: 12 tasks
 
-Estimated sessions needed:
-- Session 1: Tasks 1-4 (🟢🟢🟡🟡) = 4 tasks
-- Session 2: Tasks 5-7 (🟡🟡🔴) = 3 tasks
-- Session 3: Tasks 8-10 (🟡🟡🔴) = 3 tasks
-- Session 4: Tasks 11-12 (🟢🟢) + final review = 2 tasks
+Sessions needed: 12
+Each session:
+1. /execute-plan <plan>
+2. Execute one task
+3. Code review
+4. Commit
+5. Checkpoint + STOP
 
-Total: ~4 sessions for 12 tasks
+Total time: ~10-15 min per session × 12 = 2-3 hours
 ```
+
+This seems like more overhead, but it:
+- Eliminates context degradation issues
+- Ensures every task gets proper review
+- Creates natural breakpoints for the user
 
 ## Integration with Commands
 
 ### /checkpoint
 
-Reports rotation recommendation:
+Reports task completion and session stop:
 ```
-Checkpoint saved.
-Tasks this session: 3
-⚠️ Consider rotating after next task (approaching limit).
+✓ Checkpoint persisted: docs/plans/.state/<plan>.checkpoint.md
+- Task: 3
+- Status: completed
+
+✓ Task 3 complete. Session will pause for context refresh.
+
+To continue: /execute-plan <plan-name>
+Next task: 4 - [title]
 ```
 
-### /resume-plan
+### /execute-plan (resuming)
 
-Resets session counter:
+Starts fresh session with context:
 ```
 Session started fresh.
-Tasks this session: 0
-Rotation recommended after: 4 tasks or 30 min
+Plan: <plan-name>
+Current task: 4 of 12
+
+Task 4: [title]
+Context loaded. Ready to execute.
 ```
 
 ### /execute-plan
 
-Pauses for rotation:
+Stops after each task:
 ```
-Task 4 complete.
-⚠️ Rotation recommended: 4 tasks completed.
+✓ Task 3 complete.
 
-Options:
-1. Pause and rotate (recommended)
-2. Continue (not recommended - quality may degrade)
+Session will pause for context refresh.
+
+To continue with next task:
+  /execute-plan <plan-name>
+
+Progress: 3/12 tasks complete
+Next task: 4 - [title]
 ```
+
+**Note:** Do NOT continue to the next task. Stop is mandatory.
 
 ## Manual Override
 
-Sometimes you should ignore rotation recommendations:
+The one-task-per-session rule is strict, but there are exceptions:
 
-**Continue despite trigger:**
-- Only 1 trivial task remaining
-- In middle of debugging (need context)
-- User explicitly requests continuation
+**User can continue if:**
+- User explicitly requests continuation (their choice)
+- Debugging in progress (need context for fix)
 
-**Rotate despite no trigger:**
-- Major domain switch (frontend → backend)
-- Significant error recovery just completed
-- Starting complex task after simple ones
-- Session "feels" degraded
+**Rotate immediately despite incomplete task:**
+- 3+ consecutive failures
+- Context feels wrong
+- Major domain switch needed
+
+**Note:** If user chooses to continue, they accept the risk of context degradation. The system should still output the stop recommendation.
 
 ## Anti-Patterns
 
@@ -222,10 +253,10 @@ Sometimes you should ignore rotation recommendations:
 
 | Anti-Pattern | Problem | Instead |
 |--------------|---------|---------|
-| Ignoring rotation warnings | Quality degrades silently | Respect the heuristics |
+| Continuing after task complete | Context degrades, reviews skipped | STOP after each task |
 | Rotating mid-task | Loses implementation context | Finish task, then rotate |
-| No checkpoint before rotate | Loses state | Always checkpoint first |
-| Rotating after every task | Excessive overhead | Trust the heuristics |
+| No checkpoint before stop | Loses state | Always checkpoint first |
+| Skipping code review | Issues compound across tasks | Review before commit |
 | Fighting through rot | Compounds errors | Rotate and start fresh |
 
 ### Signs You're Fighting Context Rot
@@ -244,10 +275,10 @@ After completing a plan, review:
 
 | Metric | Target | Red Flag |
 |--------|--------|----------|
-| Sessions per plan | 3-5 for 10-task plan | 8+ sessions |
-| Tasks per session | 3-4 average | < 2 average |
-| Rotation triggers hit | Planned rotations | Emergency rotations |
+| Sessions per plan | 1 per task | Multiple tasks per session |
+| Code reviews performed | 100% of tasks | Skipped reviews |
+| Checkpoint success rate | 100% persisted | Failed checkpoints |
 | User corrections | Rare | Frequent |
 | Retry rate | < 20% of tasks | > 50% of tasks |
 
-Track these to calibrate your rotation heuristics over time.
+Track these to ensure the workflow is being followed.

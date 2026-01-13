@@ -46,7 +46,23 @@ Your context window will be automatically managed. Do not limit analysis depth d
 - Compare plan's approach with existing patterns
 - Check naming conventions, error handling, test structure
 
-### 5. Risk & Gap Identification
+### 5. Task Scope Validation
+
+**"One Sentence Without 'And'" Rule:**
+
+For each task, verify:
+- Can be described in one sentence without "and"
+- Has ONE clear outcome
+- Will result in ONE logical commit
+
+**Examples:**
+- ✓ "Update Angular core to v19" → properly scoped
+- ✗ "Update Angular and fix lint errors" → TOO BROAD (2 tasks)
+
+**If violations found:**
+Add to Critical Issues: "Task [N] violates scoping rule. Split into separate tasks."
+
+### 6. Risk & Gap Identification
 - Search for conflicting implementations
 - Identify missing: tests, types, error handling, config updates
 - Check cross-service dependencies and security concerns
@@ -74,6 +90,12 @@ Your context window will be automatically managed. Do not limit analysis depth d
 
 ## Pattern Consistency
 [Comparison with similar code, naming conventions, test coverage]
+
+## Task Scope Validation
+| Task | Passes "One Sentence Without And"? | Notes |
+|------|-------------------------------------|-------|
+| Task 1 | ✅/❌ | [details] |
+| Task 2 | ✅/❌ | [details] |
 
 ## Risk Assessment
 ### Critical Issues (Must Fix)

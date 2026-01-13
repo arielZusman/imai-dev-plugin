@@ -30,4 +30,33 @@ Read the source plan file completely before enriching. Verify file paths and dep
 
 **Why enrichment matters:** Enriched plans are executed in fresh sessions with zero prior context. Every task must be self-contained with explicit file paths, inline code snippets, and verification steps. Without enrichment, executors will hallucinate paths or skip critical steps.
 
+## Critical Requirements
+
+### Task Scoping: "One Sentence Without 'And'"
+
+Each task MUST be properly scoped:
+- ✓ "Update Angular core to v19" → one focus
+- ✗ "Update Angular and fix lint errors" → TWO tasks
+
+If a task requires "and" to describe, break it into separate tasks.
+
+### Mandatory Code Review Per Task
+
+Every task MUST include:
+```
+□ REVIEW: /pr-review-toolkit:review-pr staged
+```
+
+This is NOT optional. Code review after each task catches issues before they compound.
+
+### Mandatory Session Stop
+
+Each task ends with:
+```
+□ CHECKPOINT: /checkpoint <plan> <task> completed
+□ STOP: Session pauses here - user runs /execute-plan to continue
+```
+
+One task per session ensures fresh context and mandatory review.
+
 The skill has full details. Invoke it now.

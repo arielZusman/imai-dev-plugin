@@ -70,22 +70,45 @@ When this command is invoked:
    - Add session_log entry: `blocked`
    - Output: "Task blocked. Resolve blocker before proceeding."
 
-4. **Check rotation heuristic:**
-   - If `tasks_completed_this_session >= 4`:
-     Output warning: "Rotation recommended: 4+ tasks completed. Consider clearing session and running `/resume-plan $ARGUMENTS.plan_path`"
-   - Calculate elapsed time since session_start
-   - If elapsed > 30 minutes:
-     Output warning: "Rotation recommended: Session > 30 min. Consider clearing session and running `/resume-plan $ARGUMENTS.plan_path`"
+4. **Enforce session stop after task completion:**
+
+   When status is `completed`:
+   - Session MUST stop after this task
+   - Output the pause message (see step 7)
+   - Do NOT continue to next task in same session
+
+   This is mandatory. One task per session ensures:
+   - Fresh context for each task
+   - Code review cannot be skipped
+   - Checkpoint state is always current
 
 5. **Write updated checkpoint** to `docs/plans/.state/<plan-slug>.checkpoint.md`
 
-6. **Output summary:**
+6. **Verify checkpoint was persisted:**
+   ```bash
+   # Verify file exists and is readable
+   cat docs/plans/.state/<plan-slug>.checkpoint.md | head -20
    ```
-   Checkpoint saved: docs/plans/.state/<plan-slug>.checkpoint.md
+
+   **If verification fails:**
+   - Report: "ERROR: Checkpoint file not persisted correctly"
+   - Retry write once
+   - If still fails: STOP and report to user
+
+7. **Output summary:**
+   ```
+   ✓ Checkpoint persisted: docs/plans/.state/<plan-slug>.checkpoint.md
    - Task: <task_number>
    - Status: <status>
    - Tasks this session: <count>
-   - Rotation: <recommended|not needed>
+   ```
+
+   **If status is `completed`:**
+   ```
+   ✓ Task [N] complete. Session will pause for context refresh.
+
+   To continue: /execute-plan <plan-name>
+   Next task: [N+1] - [title]
    ```
 
 ## Checkpoint File Format

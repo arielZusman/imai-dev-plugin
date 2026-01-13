@@ -52,6 +52,77 @@ Checkpoint: docs/plans/.state/<plan-slug>.checkpoint.md
 - If `$ARGUMENTS.tasks` provided: execute only specified tasks
 - Otherwise: execute from current position to end (respecting dependencies)
 
+**If checkpoint exists (resuming):**
+
+1. Extract current position:
+   - `execution.current_task` - task number
+   - `execution.current_phase` - where in task cycle
+   - `execution.status` - in_progress/completed/blocked
+
+2. Display recent activity (last 5 session_log entries):
+   ```
+   Recent activity:
+   - [timestamp] task_completed: Task 8 - Tests written
+   - [timestamp] task_started: Task 9
+   - [timestamp] error: Build failed - missing import
+   ```
+
+3. Show handoff notes from previous task (if any)
+
+4. Check rotation heuristics:
+   - If `tasks_completed_this_session >= 4`: warn user
+   - If session has been running > 30 min: warn user
+   ```
+   ⚠️ Rotation recommended: [reason]
+   Consider clearing session after completing current task.
+   ```
+
+## Step 1.5: Load Task-Specific Context
+
+<investigate_before_answering>
+Read the actual Context Requirements from the checkpoint or plan. Do not guess file paths or assume what context is needed.
+</investigate_before_answering>
+
+**From checkpoint (preferred):**
+
+Read the `context_requirements` section for current task:
+```yaml
+context_requirements:
+  task_9:
+    required:
+      - path: src/services/auth.service.ts
+        sections: [validateToken, refreshToken]
+    reference:
+      - path: docs/auth-flow.md
+```
+
+**Re-read only required files**, not the entire codebase.
+
+**From plan (fallback):**
+
+Read the task's "Context Requirements" field and re-read listed files.
+
+**Output context summary:**
+```markdown
+## Resuming: [Plan Name]
+
+**Position:** Task [N] - [Title]
+**Phase:** [implement/verify/review]
+**Tasks completed this plan:** [X]/[Y]
+
+### Context Loaded
+**Required files re-read:**
+- src/services/auth.service.ts (validateToken, refreshToken)
+- src/types/auth.types.ts
+
+### Handoff from Previous Task
+[handoff_notes from checkpoint for previous task]
+
+### Ready to Execute
+Task [N]: [Title]
+First step: [first step from task]
+```
+
 ## Step 2: Pre-Flight Verification
 
 Before starting any task, run ALL of these checks:
@@ -114,13 +185,25 @@ Use this checklist for every task:
 Task [N] Checklist:
 □ CHECKPOINT: /checkpoint <plan> <task> started
 □ DIRECTORY: pwd shows correct target directory
+□ SEARCH FIRST: Verify feature/fix doesn't already exist (see search-first below)
 □ IMPLEMENT: Execute task steps
 □ VERIFY: Run task's verification command
-□ REVIEW: /pr-review-toolkit:review-pr staged
+□ BUILD: npm run build (must pass)
+□ REVIEW: /pr-review-toolkit:review-pr staged (MANDATORY - do not skip)
 □ FIX: Address critical issues (max 2 iterations)
 □ COMMIT: git commit with descriptive message
 □ CHECKPOINT: /checkpoint <plan> <task> completed
+□ STOP: Session pauses here - user runs /execute-plan to continue
 ```
+
+<search_first_guardrail>
+Before implementing ANY task, search the codebase first:
+1. Search for existing implementations of the feature/fix
+2. Grep for related function names, class names, patterns
+3. ONLY proceed if confirmed the functionality doesn't already exist
+
+"Don't assume not implemented" - this prevents duplicate work and conflicts.
+</search_first_guardrail>
 
 <mandatory_code_review>
 Code review after each task is not optional. Reviews catch issues before they compound across tasks.
@@ -183,47 +266,36 @@ parallel_groups:
 
 **Note:** True parallelism requires multiple Task tool calls in same message.
 
-## Step 4: Rotation Management
+## Step 4: Mandatory Session Stop After Each Task
 
-Rotation prevents context degradation after sustained work. As context fills, attention to recent instructions decreases and error rates increase.
+**One task per session.** This ensures:
+- Fresh context for each task (prevents degradation)
+- Code review cannot be skipped
+- Checkpoint state is always current
+- Failures are isolated to single tasks
 
-**Track progress in your todo list with task count:**
+**After EACH task completion, you MUST:**
+
+1. Save checkpoint: `/checkpoint <plan> <task> completed`
+2. Run code review: `/pr-review-toolkit:review-pr staged`
+3. Commit the work
+4. **STOP and output:**
+
 ```
-Example todo list format:
-- [x] Task 1: Update dependencies (1/6)
-- [x] Task 2: Fix imports (2/6)
-- [x] Task 3: Update config (3/6)
-- [ ] Task 4: Run migrations (4/6) ⚠️ ROTATION RECOMMENDED
-- [ ] Task 5: Update tests (5/6)
-- [ ] Task 6: Final verification (6/6)
-```
+✓ Task [N] complete.
 
-**After EACH task completion, check rotation heuristic:**
+Session will pause for context refresh.
 
-**Triggers (check BOTH):**
-- `tasks_completed_this_session >= 4` → Output rotation warning
-- Elapsed time > 30 minutes since session start → Output rotation warning
+To continue with next task:
+  /execute-plan <plan-name>
 
-**If triggered, you MUST output:**
-```
-⚠️ ROTATION RECOMMENDED
-
-Tasks completed this session: [N]
-Time elapsed: [X] minutes
-
-Continuing without rotation may lead to:
-- Context degradation
-- Increased error rate
-- Missed instructions
-
-Options:
-1. Continue (not recommended)
-2. Pause and rotate: /checkpoint <plan> <task> completed, then start new session
-
-To resume: /resume-plan <plan-path>
+Progress: [N]/[total] tasks complete
+Next task: [N+1] - [title]
 ```
 
-**If user continues:** proceed but warn again after EVERY subsequent task.
+**Do NOT continue to the next task in the same session.**
+
+This is not optional. Each task = one session = one commit = one review cycle.
 
 ## Step 5: Completion
 
@@ -355,14 +427,19 @@ Rationale: Config change, trivial
 
 ## Handling Pre-Commit Hooks
 
-When committing, pre-commit hooks may fail. Follow these guidelines:
+When committing, pre-commit hooks may fail. **User consent is REQUIRED for any bypass.**
 
-**When bypass is ACCEPTABLE (`--no-verify`):**
+<hook_bypass_rule>
+NEVER use `--no-verify` without explicit user consent via AskUserQuestion.
+This is a HARD BLOCK - no exceptions, no assumptions, no autonomous decisions.
+</hook_bypass_rule>
+
+**When bypass might be appropriate (still requires user consent):**
 - Pre-existing lint errors not introduced by your changes
 - Formatting issues from automated tools (prettier, eslint --fix)
 - Hook runs checks unrelated to your changes (e.g., unmodified files)
 
-**When bypass is NOT acceptable:**
+**When bypass is NEVER acceptable:**
 - New lint errors in files you modified
 - Type errors in your code
 - Failing tests
@@ -372,15 +449,29 @@ When committing, pre-commit hooks may fail. Follow these guidelines:
 ```
 Hook failed → Check if error is in files YOU modified
   ├── Yes → Fix the issue, do NOT bypass
-  └── No → Ask user: "Pre-commit hook failed on pre-existing issues. Bypass with --no-verify?"
+  └── No → STOP and ask user using AskUserQuestion:
+           "Pre-commit hook failed on pre-existing issues.
+            - Error: [summary]
+            - Files affected: [list]
+            Bypass with --no-verify?"
+            Options: [Yes, bypass] [No, fix first]
 ```
 
-**If user approves bypass:**
+**If user explicitly approves bypass:**
 ```bash
 git commit --no-verify -m "your message"
 ```
 
-**Document bypasses:** Add note to Execution Log: "Committed with --no-verify due to [reason]"
+**Document ALL bypasses in checkpoint:**
+```yaml
+session_log:
+  - event: hook_bypassed
+    reason: "Pre-existing lint errors in unmodified files"
+    user_consent: true
+    timestamp: "..."
+```
+
+**If user declines bypass:** Stop execution, report the issue, do not proceed.
 
 ---
 
@@ -410,7 +501,7 @@ git commit --no-verify -m "your message"
 
 ## Integration with Other Commands
 
-- **Before execution:** `/resume-plan` to load context and verify state
 - **During execution:** `/checkpoint` called automatically
 - **After tasks:** Rotation check, may recommend session clear
 - **After completion:** Suggest `/pr-review-toolkit:review-pr` for final review
+- **To resume:** Run `/execute-plan <plan>` again - checkpoint state is loaded automatically
