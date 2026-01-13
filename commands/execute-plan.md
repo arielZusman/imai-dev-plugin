@@ -172,6 +172,7 @@ Check task's `Dispatch` field or use default rules:
 |-----------|----------|-----------|
 | `Dispatch: direct` in task | Execute directly | Explicit instruction |
 | `Dispatch: sub-agent (X)` in task | Dispatch to agent X | Explicit instruction |
+| `Dispatch: codex` in task | Delegate to Codex via MCP | User preference for Codex |
 | Complexity 🟢 + < 50 lines | Execute directly | Low overhead wins |
 | Complexity 🟡/🔴 | Dispatch to sub-agent | Context isolation benefit |
 | TDD test task | Dispatch to test-writer | Fresh context for test design |
@@ -265,6 +266,99 @@ parallel_groups:
 6. Checkpoint each task
 
 **Note:** True parallelism requires multiple Task tool calls in same message.
+
+### 3.4 Codex Delegation
+
+When dispatch decision is `codex`, delegate the implementation to OpenAI's Codex via MCP.
+
+**Prerequisites:**
+- Codex MCP server configured (run `/setup-codex` if not)
+- If MCP tool `mcp__codex__codex` is not available, warn user and offer alternatives
+
+**Delegation flow:**
+
+1. Run `/checkpoint <plan> <task> started`
+
+2. Build delegation prompt using template from `commands/references/CODEX-DELEGATION-TEMPLATE.md`:
+   - Populate all fields (task title, context, steps, etc.)
+   - **Inline all required files** - Codex is stateless, needs full file contents
+   - Include relevant code patterns from codebase
+
+3. Determine sandbox mode:
+   - `workspace-write` for implementation tasks (creates/modifies files)
+   - `read-only` for analysis/review only
+
+4. Call MCP tool:
+   ```
+   mcp__codex__codex
+   - prompt: [built delegation prompt]
+   - sandbox: [workspace-write or read-only]
+   ```
+
+5. Parse Codex response:
+   - Extract file blocks (look for `### File:` headers)
+   - Parse code content between triple backticks
+   - Validate paths match expected files
+
+6. Apply changes:
+   - Use Write tool for each modified file
+   - Preserve any files Codex didn't modify
+
+7. Continue to verification (same as direct execution):
+   - Run task's Verify step
+   - Run `/pr-review-toolkit:review-pr staged`
+   - Fix critical issues (max 2 iterations)
+   - Commit with descriptive message
+   - Run `/checkpoint <plan> <task> completed`
+
+**If Codex delegation fails:**
+
+Do NOT silently fall back. Ask user via AskUserQuestion:
+
+```
+Codex delegation failed.
+Error: [error details]
+
+How would you like to proceed?
+```
+
+Options:
+- **Retry Codex** - Try delegation again (useful for transient errors)
+- **Fall back to Claude** - Execute directly in main session
+- **Mark blocked** - Stop execution, require manual intervention
+
+Log outcome in checkpoint:
+```yaml
+session_log:
+  - event: codex_delegation_failed
+    error: "[error details]"
+    resolution: "[retry|fallback|blocked]"
+    timestamp: "..."
+```
+
+**Example Codex task in plan:**
+
+```markdown
+### Task 5: Implement validation service
+
+**Complexity:** 🟡 Moderate
+**Dispatch:** codex
+
+**Context Requirements:**
+- Required: `src/services/validation.service.ts`
+- Required: `src/types/validation.types.ts`
+- Reference: `src/services/auth.service.ts` (pattern example)
+
+**Steps:**
+1. Create ValidationService class
+2. Add validateEmail method with RFC 5322 regex
+3. Add validatePassword method (min 8 chars, 1 number, 1 special)
+4. Export from services/index.ts
+
+**Verify:**
+- `npm run build` passes
+- `npm run test -- validation` passes
+```
 
 ## Step 4: Mandatory Session Stop After Each Task
 
@@ -397,6 +491,12 @@ Rationale: Complex implementation, isolate from planning context
 ```
 Dispatch: direct
 Rationale: Config change, trivial
+```
+
+**Task: Implement data transformation pipeline (🟡 Moderate)**
+```
+Dispatch: codex
+Rationale: User prefers Codex for code generation heavy tasks
 ```
 
 ---

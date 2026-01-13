@@ -90,6 +90,29 @@ When a specialist agent would benefit a task, recommend it. Common patterns:
 - Use `—` if no agent provides clear benefit
 - Consider project-specific agents if available
 
+## Codex Delegation (Optional)
+
+For users who prefer OpenAI Codex for code generation tasks, add `Dispatch: codex` to the task.
+
+**Prerequisites:**
+- Run `/setup-codex` to configure Codex MCP server
+- Codex CLI installed and authenticated
+
+**When to recommend Codex:**
+- User explicitly requests Codex for tasks
+- Code generation heavy tasks (large implementations)
+- When user has stated preference for Codex style
+
+**Format:**
+```markdown
+**Dispatch:** codex
+```
+
+**Important:** Codex delegation only handles implementation. Claude Code still manages:
+- Checkpoint creation (before/after task)
+- Code review (`/pr-review-toolkit:review-pr`)
+- Verification and commit
+
 ## Critical: Execution Workflow Embedding
 
 The enriched plan MUST include these elements to ensure code reviews are not skipped:

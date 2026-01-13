@@ -102,7 +102,7 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 **Complexity:** 🟢 Simple | 🟡 Moderate | 🔴 Complex
 **Depends on:** None | Task N, Task M
 **Parallel group:** A | — (sequential)
-**Dispatch:** direct | sub-agent ([agent-name])
+**Dispatch:** direct | sub-agent ([agent-name]) | codex
 **Recommended skill:** `[skill-name]` | — (none)
   - [When to invoke: BEFORE/DURING/AFTER implementation]
   - [What the skill provides]
@@ -176,12 +176,14 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 | Task 1 | direct | Simple, < 50 lines |
 | Task 2 | sub-agent (general-purpose) | TDD test writing |
 | Task 3 | sub-agent (general-purpose) | Complex implementation |
+| Task 4 | codex | User prefers Codex for implementation |
 | Task N | direct | Config/trivial change |
 
 **Dispatch guidelines:**
 - `direct`: Simple edits, config changes, < 50 lines modified
 - `sub-agent`: TDD tests, complex implementation, code review
-- Only delegate to sub-agents when the task clearly benefits from a separate agent with a new context window
+- `codex`: User preference for OpenAI Codex (requires `/setup-codex` first)
+- Only delegate to sub-agents/codex when the task clearly benefits from a separate context
 
 ---
 
