@@ -180,22 +180,36 @@ Check task's `Dispatch` field or use default rules:
 
 ### 3.2 Execute Task
 
-Use this checklist for every task:
+<checklist_tracking>
+Use TodoWrite to track checklist progress for EVERY task. This is not optional.
 
-```
-Task [N] Checklist:
-□ CHECKPOINT: /checkpoint <plan> <task> started
-□ DIRECTORY: pwd shows correct target directory
-□ SEARCH FIRST: Verify feature/fix doesn't already exist (see search-first below)
-□ IMPLEMENT: Execute task steps
-□ VERIFY: Run task's verification command
-□ BUILD: npm run build (must pass)
-□ REVIEW: /pr-review-toolkit:review-pr staged (MANDATORY - do not skip)
-□ FIX: Address critical issues (max 2 iterations)
-□ COMMIT: git commit with descriptive message
-□ CHECKPOINT: /checkpoint <plan> <task> completed
-□ STOP: Session pauses here - user runs /execute-plan to continue
-```
+**Why this matters:**
+- Users cannot see your internal state - TodoWrite gives them visibility
+- Skipping tracking leads to skipped steps - the todo list enforces completeness
+- Each completed item proves the step was done, not just planned
+
+**How to track:**
+1. Before starting a task, create ALL checklist items as todos (status: pending)
+2. Mark each item `in_progress` as you start it
+3. Mark each item `completed` IMMEDIATELY after finishing - do not batch completions
+
+Do NOT proceed to the next task until all checklist items show completed.
+</checklist_tracking>
+
+### Task Checklist (create as TodoWrite todos)
+
+| Step | content | activeForm |
+|------|---------|------------|
+| 1 | Save checkpoint: task started | Saving task started checkpoint |
+| 2 | Verify directory matches plan target | Verifying target directory |
+| 3 | Search for existing implementation | Searching for existing implementation |
+| 4 | Execute task steps | Implementing task |
+| 5 | Run task verification command | Running verification |
+| 6 | Run build (npm run build) | Building project |
+| 7 | Run code review (/pr-review-toolkit:review-pr staged) | Running code review |
+| 8 | Fix critical issues (max 2 iterations) | Fixing review issues |
+| 9 | Commit changes | Committing changes |
+| 10 | Save checkpoint: task completed | Saving task completed checkpoint |
 
 <search_first_guardrail>
 Before implementing ANY task, search the codebase first:
@@ -224,6 +238,8 @@ Run `/pr-review-toolkit:review-pr staged` before committing.
 9. Run `/checkpoint <plan> <task> completed`
 10. Provide handoff notes when prompted
 
+**After completing all steps:** Verify your TodoWrite list shows all 10 items as `completed` before announcing task completion.
+
 **If dispatching to sub-agent:**
 
 1. Run `/checkpoint <plan> <task> started`
@@ -243,6 +259,8 @@ Run `/pr-review-toolkit:review-pr staged` before committing.
 6. If verification fails: retry once with feedback, then mark blocked
 7. Commit changes
 8. Run `/checkpoint <plan> <task> completed`
+
+**After sub-agent completes:** Update your TodoWrite list to mark relevant items as `completed`. Verify all items complete before proceeding.
 
 ### 3.3 Handle Parallel Tasks
 
