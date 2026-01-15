@@ -35,6 +35,10 @@ Save or update a checkpoint file for the current plan execution.
 Read the existing checkpoint file before updating. Do not assume current state - verify actual task progress and session counts from the file.
 </investigate_before_answering>
 
+**IMPORTANT:** Multi-file and single-file plans use DIFFERENT checkpoint locations:
+- Multi-file: `docs/plans/YYYY-MM-DD-feature/checkpoint.md` (inside plan folder)
+- Single-file: `docs/plans/.state/<plan-slug>.checkpoint.md` (in .state/ folder)
+
 When this command is invoked:
 
 1. **Parse the plan path** to derive checkpoint location:

@@ -66,9 +66,15 @@ To continue: User runs `/execute-plan <plan-name>` in fresh session (checkpoint 
 ### Plan Files
 
 - Raw plans: `~/.claude/plans/*.md`
-- Enriched plans: `docs/plans/YYYY-MM-DD-<feature-name>.md`
-- Checkpoints: `docs/plans/.state/<plan-slug>.checkpoint.md`
+- Enriched plans:
+  - Multi-file: `docs/plans/YYYY-MM-DD-<feature-name>/intro.md`
+  - Single-file: `docs/plans/YYYY-MM-DD-<feature-name>.md`
+- Checkpoints:
+  - Multi-file: `docs/plans/YYYY-MM-DD-<feature-name>/checkpoint.md`
+  - Single-file: `docs/plans/.state/<plan-slug>.checkpoint.md`
 - Index: `docs/plans/INDEX.md`
+
+**Note:** Multi-file format (>= 3 tasks) stores checkpoint in plan folder. Single-file format (< 3 tasks) uses `.state/` folder.
 
 ### Skill Structure
 
