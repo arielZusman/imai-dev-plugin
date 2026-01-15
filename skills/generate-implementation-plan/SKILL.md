@@ -171,6 +171,37 @@ For each task, recommend relevant skills that should be invoked. Check all avail
 - Use `—` if no skill provides clear benefit
 - Include invocation timing (before/during/after implementation)
 
+## Complexity Assignment
+
+Every task MUST be assigned a complexity rating during enrichment:
+
+**🟢 Simple** (< 50 lines, single focus):
+- Single file modifications < 50 lines
+- Config changes, simple refactors
+- Clear input → output transformations
+- Examples: Add environment variable, update constant, simple helper function
+
+**🟡 Moderate** (50-200 lines, some complexity):
+- Multiple files modified
+- Business logic implementation
+- Requires understanding existing patterns
+- Examples: Add API endpoint, implement validation logic, refactor component
+
+**🔴 Complex** (> 200 lines, architectural):
+- Architectural changes
+- Cross-cutting concerns
+- Requires deep domain knowledge
+- Examples: Migrate authentication system, redesign data layer, add new service
+
+**Dispatch implications:**
+- 🟢: Direct execution or focused-task-executor (if also < 30 lines, single file)
+- 🟡: Sub-agent recommended for context isolation
+- 🔴: Sub-agent required
+
+**Who assigns:** Plan enricher during enrichment process (not the original planner)
+
+**Validation:** Plan validator checks all tasks have complexity assigned
+
 ## Agent Recommendations
 
 When a specialist agent would benefit a task, recommend it. Common patterns:

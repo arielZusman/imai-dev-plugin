@@ -70,6 +70,17 @@ Each task MUST be properly scoped:
 
 If a task requires "and" to describe, break it into separate tasks.
 
+### Complexity Assignment
+
+**Your responsibility:** Assign complexity rating (🟢/🟡/🔴) to every task during enrichment.
+
+Use the criteria from the skill:
+- 🟢 Simple: < 50 lines, single file, clear transformations
+- 🟡 Moderate: 50-200 lines, multiple files, business logic
+- 🔴 Complex: > 200 lines, architectural changes, cross-cutting concerns
+
+**Critical:** Every task in the enriched plan MUST have a complexity rating. This drives dispatch decisions during execution.
+
 ### Mandatory Code Review Per Task
 
 Every task MUST include:

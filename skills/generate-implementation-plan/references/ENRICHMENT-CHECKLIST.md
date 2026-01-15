@@ -58,7 +58,10 @@ When using multi-file format (>= 3 tasks), verify these additional items:
 ### Task Coordination
 - [ ] **Task dependencies** - "Depends on" field for each task
 - [ ] **Parallel groups** - Independent tasks grouped for parallel execution
-- [ ] **Complexity indicators** - Each task marked 🟢/🟡/🔴
+- [ ] **Complexity indicators** - Each task marked 🟢/🟡/🔴 (see Complexity Assignment in SKILL.md)
+  - 🟢 Simple: < 50 lines, single file
+  - 🟡 Moderate: 50-200 lines, multiple files
+  - 🔴 Complex: > 200 lines, architectural
 - [ ] **Dispatch hints** - `direct` vs `sub-agent` per task (see below)
 - [ ] **Agent recommendations** - Per-task agent when beneficial (use `—` if none helps)
 

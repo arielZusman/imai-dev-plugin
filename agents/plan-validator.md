@@ -71,6 +71,7 @@ For enriched plans (in `docs/plans/`), verify:
 | Fresh Session Entry Point | Section exists after Project Context | Missing or incomplete |
 | Why field format | Each task has Business + Technical | Generic "needed for feature" |
 | Time estimates | Each task has ~15m/~30m/~1hr | Missing estimates |
+| Complexity ratings | Each task has 🟢/🟡/🔴 | Missing complexity indicator |
 | Context Requirements | Has Verify notes | "Read X" without what to check |
 | Failure Modes | Includes Rollback command | No recovery path |
 | Task 0 | Prerequisites verification exists | Jumps straight to Task 1 |
@@ -122,6 +123,7 @@ For upgrade/migration plans, also check:
 | Fresh Session Entry Point | ✅/❌ | [details] |
 | Why field format | ✅/❌ | [details] |
 | Time estimates | ✅/❌ | [details] |
+| Complexity ratings | ✅/❌ | [details] |
 | Context Verify notes | ✅/❌ | [details] |
 | Rollback commands | ✅/❌ | [details] |
 | Task 0 prerequisites | ✅/❌ | [details] |
