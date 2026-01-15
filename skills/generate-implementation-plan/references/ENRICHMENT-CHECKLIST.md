@@ -70,6 +70,8 @@ When using multi-file format (>= 3 tasks), verify these additional items:
 - [ ] **Final checklist** - Tests, build, feature verification
 - [ ] **Gotchas** - Non-obvious issues
 - [ ] **Review protocol** - Per-task review scope, final review step
+  - Aspect selection: `code` (always) + `errors` (if error handling) + `types` (if types modified) + `tests` (if tests added)
+  - See TEMPLATE.md:53-59 for aspect mapping table
 - [ ] **Execution Log** - Table with row per task, all marked ⏳ Pending
 
 ## Content Guidelines

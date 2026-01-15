@@ -107,7 +107,8 @@ npm run test -- [relevant test pattern]
 - [ ] Implementation complete
 - [ ] Verification passed
 - [ ] Build passes: `npm run build`
-- [ ] Review: `/pr-review-toolkit:review-pr staged`
+- [ ] Review: `/pr-review-toolkit:review-pr staged [aspects]`
+  - Aspects: `code` (always) + `errors` (if error handling) + `types` (if types modified) + `tests` (if tests added)
 - [ ] Committed
 - [ ] `/checkpoint <plan> <task> completed`
 - [ ] **STOP** - Session pauses here
