@@ -56,6 +56,12 @@ When this command is invoked:
    - Add task to Completed Tasks section
    - Increment `tasks_completed_this_session`
    - Add session_log entry: `task_completed`
+   - **Capture git state for conditional startup checks:**
+     ```bash
+     git rev-parse HEAD | cut -c1-8  # last_commit
+     git status --porcelain | wc -l   # 0 = clean
+     ```
+   - **Generate continuation prompt** (see below)
    - Check rotation heuristic
 
    **If `error`:**
@@ -114,6 +120,51 @@ When this command is invoked:
 ## Checkpoint File Format
 
 See `docs/plans/.state/CHECKPOINT-FORMAT.md` for full specification.
+
+### Git State Section
+
+Include git state for conditional startup checks in `/execute-plan`:
+
+```yaml
+git:
+  last_commit: "a1b2c3d4"  # First 8 chars of HEAD
+  working_tree_clean: true  # Based on git status --porcelain
+  timestamp: "2026-01-15T10:30:00Z"
+```
+
+When `/execute-plan` resumes:
+- If `working_tree_clean: true` AND `last_commit` matches current HEAD → skip `git status`
+- Otherwise → run `git status` to detect uncommitted changes
+
+### Continuation Prompt Section
+
+Generate an exact prompt for the next session. Include in checkpoint:
+
+```yaml
+continuation:
+  prompt: |
+    Continue executing docs/plans/2026-01-14-feature.md
+
+    Current position: Task 5 of 8
+    Last completed: Task 4 - "Add validation service"
+
+    Next task: Task 5 - "Write unit tests for validation"
+    First step: Read src/services/validation.service.ts
+
+    Handoff notes from Task 4:
+    - ValidationService exports validateEmail and validatePassword
+    - Uses RFC 5322 regex for email validation
+    - Password requires 8+ chars, 1 number, 1 special char
+  next_task:
+    number: 5
+    title: "Write unit tests for validation"
+    first_step: "Read src/services/validation.service.ts"
+```
+
+**Benefits:**
+- User can copy exact prompt to start fresh session
+- Context is pre-loaded without re-reading plan
+- Handoff notes carry forward essential information
 
 ## Example Workflow
 

@@ -32,6 +32,36 @@ Read the source plan file completely before enriching. Verify file paths and dep
 
 ## Critical Requirements
 
+### Context Optimization (Startup Tool Call Reduction)
+
+For each task, pre-compute context that would otherwise require tool calls during execution:
+
+**Test File Discovery:**
+```bash
+# For each file to modify (e.g., auth.service.ts):
+1. Find related spec: Glob for `auth.service.spec.ts` in same directory
+2. Find dependent tests: Grep for files importing auth.service.ts
+3. Locate mocks: Read spec file, find mock setup (beforeEach blocks)
+4. Document in plan:
+   - Spec file path
+   - Mock location (line numbers)
+   - Required mock changes based on interface modifications
+```
+
+**File Checksums:**
+```bash
+# For each file to modify:
+md5 -q /path/to/file.ts | cut -c1-8
+# Include in plan for skip-if-already-done detection
+```
+
+**Dependency Information (for package upgrades):**
+```bash
+npm info @package/name peerDependencies
+npm info @package/name peerDependenciesMeta
+# Document known issues, breaking changes
+```
+
 ### Task Scoping: "One Sentence Without 'And'"
 
 Each task MUST be properly scoped:

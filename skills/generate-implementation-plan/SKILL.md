@@ -28,11 +28,14 @@ metadata:
 1. **Identify the plan** - Ask user which plan or use the most recent
 2. **Read the plan** - Understand tasks and scope
 3. **Gather context** - Read relevant files mentioned in the plan
-4. **Enrich** - Add self-contained header and inline code context
-5. **Add verification** - How to confirm each task is complete
-6. **Add skill recommendations** - Which skills to invoke per task
-7. **Save** - Write to `docs/plans/YYYY-MM-DD-<feature-name>.md`
-8. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md`
+4. **Discover test files** - For each modified file, find related `.spec.ts` files and mock locations
+5. **Compute checksums** - Calculate md5 checksums for files to be modified (first 8 chars)
+6. **Gather dependency info** - For package upgrades, query peer dependencies and known issues
+7. **Enrich** - Add self-contained header and inline code context
+8. **Add verification** - How to confirm each task is complete
+9. **Add skill recommendations** - Which skills to invoke per task
+10. **Save** - Write to `docs/plans/YYYY-MM-DD-<feature-name>.md`
+11. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md`
 
 ## Key Principles
 
@@ -44,6 +47,28 @@ The enriched plan is for a **fresh Claude session** with zero prior context.
 - Intent for business logic, exact content for templates/config
 - Verification criteria for every task
 - Skill recommendations for specialized workflows
+
+## Context Optimization (Reduces Startup Tool Calls)
+
+Pre-compute context that would otherwise require tool calls during execution:
+
+### Test File Discovery
+For each modified file, include:
+- Related `.spec.ts` file path
+- Mock setup location (line numbers)
+- Required mock changes based on interface modifications
+
+### File Checksums
+For each file to be modified:
+- Compute `md5 -q <file> | cut -c1-8`
+- Include "lines to modify" range
+- Enables skip-if-already-done detection
+
+### Dependency Information
+For package upgrade tasks:
+- Query `npm info <pkg> peerDependencies`
+- Document known compatibility issues
+- Include breaking changes from changelogs
 
 ## Skill Recommendations
 

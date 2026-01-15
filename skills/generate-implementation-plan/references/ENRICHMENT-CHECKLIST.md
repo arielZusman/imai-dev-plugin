@@ -14,6 +14,8 @@ Verify each item before saving the enriched plan.
 ### Per-Task Requirements
 - [ ] **Exact file paths** - With line numbers for modifications
 - [ ] **Context Requirements** - REQUIRED vs REFERENCE files per task (see below)
+- [ ] **Test file discovery** - Related .spec.ts files with mock locations (see below)
+- [ ] **File checksums** - For modified files, enables skip-if-already-done (see below)
 - [ ] **Clear intent or exact content** - Intent for logic, exact content for templates/config
 - [ ] **Step granularity** - Each step is ONE action (2-5 min), not a bundle of actions
 - [ ] **Commands with expected output** - What to run, what specific output to expect
@@ -72,6 +74,89 @@ Each task should specify files the executor MUST re-read before starting.
 - **Reference**: Background context, architecture docs, related but not modified files
 - Include section hints when file is large (don't re-read entire 500-line file)
 - For TDD tasks, required includes test file from previous task
+
+---
+
+## Test File Discovery
+
+Each task that modifies source files should identify related test files.
+
+**Format:**
+```markdown
+**Affected Test Files:**
+- `src/services/auth.service.spec.ts`
+  - Mock location: lines 45-67
+  - Required changes: Add mockQuerySegmentId, update AuthResponse mock
+- `src/components/login/login.component.spec.ts`
+  - Mock location: lines 12-30
+  - Required changes: Update dependency injection mocks
+```
+
+**Discovery process:**
+1. For each file to be modified (`foo.ts`), search for `foo.spec.ts` in same directory
+2. Also search for test files that import the modified file
+3. Identify mock setup locations within each test file
+4. Document what mock changes are needed based on interface changes
+
+**Benefits:**
+- Eliminates 2-4 Glob/Grep calls per task to find test files
+- Executor doesn't guess where mocks are located
+- Pre-computed mock changes prevent trial-and-error
+
+---
+
+## File Checksums
+
+Include checksums for files to be modified. Enables skip-if-already-done logic.
+
+**Format:**
+```markdown
+**Target file:** `/path/to/file.ts`
+**Checksum before edit:** `a1b2c3d4` (first 8 chars of md5)
+**Lines to modify:** 45-89
+```
+
+**Compute during enrichment:**
+```bash
+md5 -q /path/to/file.ts | cut -c1-8
+```
+
+**Benefits:**
+- Executor can verify file hasn't changed unexpectedly
+- If resuming a task, checksum mismatch indicates task already completed
+- Skip "did I already do this?" verification reads
+
+---
+
+## Dependency Information
+
+For tasks involving package upgrades, pre-compute dependency chains.
+
+**Format:**
+```markdown
+**Package Upgrade Context:**
+- Package: `@angular/core@19`
+- Peer requirements:
+  - zone.js >= 0.15.0
+  - rxjs >= 7.8.0
+- Known issues:
+  - Requires `--legacy-peer-deps` for @hakimio packages
+  - TypeScript must be 5.4+
+- Breaking changes:
+  - `ComponentRef.changeDetectorRef` renamed to `cdr`
+  - Standalone components now default
+```
+
+**Discovery during enrichment:**
+```bash
+npm info @angular/core@19 peerDependencies
+npm info @angular/core@19 peerDependenciesMeta
+```
+
+**Benefits:**
+- Eliminates 2-3 Bash calls per package to discover peer deps
+- Known issues prevent repeated trial-and-error with --legacy-peer-deps
+- Breaking changes prevent implementation guesswork
 
 ---
 

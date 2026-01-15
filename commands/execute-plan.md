@@ -16,11 +16,12 @@ Orchestrated execution of an enriched implementation plan. Runs in main session,
 
 ## Directory Safety
 
-Before running `npm`, `ng`, or package manager commands, verify the correct directory:
-```bash
-pwd
-cd <plan-target-directory>  # if needed
-```
+Use **absolute paths** in all commands. Claude Code knows the working directory from environment context - no need to verify with `pwd`.
+
+**If plan specifies a different target directory:**
+- Read from plan's "Target Directory" field
+- Use absolute paths for all file operations
+- Only `cd` if a command requires relative paths and cannot use absolute
 
 Running commands in the wrong directory corrupts the wrong `package.json`.
 
@@ -37,11 +38,19 @@ This command implements **lean orchestration**:
 
 ## Step 1: Load Plan and State
 
-**Locate files:**
+**Locate files using deterministic paths (no Glob needed):**
 ```
 Plan: docs/plans/*$ARGUMENTS.plan*.md
-Checkpoint: docs/plans/.state/<plan-slug>.checkpoint.md
 ```
+
+**Construct checkpoint path directly from plan path:**
+```
+Plan path:       docs/plans/2026-01-14-feature.md
+Checkpoint path: docs/plans/.state/2026-01-14-feature.checkpoint.md
+```
+
+Transform: Replace `docs/plans/` with `docs/plans/.state/` and keep the same filename.
+Do NOT Glob for the checkpoint file - the path is deterministic.
 
 **Parse plan for:**
 - Task list with metadata (complexity, dispatch hint, dependencies)
@@ -123,35 +132,45 @@ Task [N]: [Title]
 First step: [first step from task]
 ```
 
-## Step 2: Pre-Flight Verification
+## Step 2: Pre-Flight Verification (Optimized)
 
-Before starting any task, run ALL of these checks:
+Skip redundant checks to reduce startup overhead. The previous session already verified build/tests on completion.
+
+**Conditional checks based on checkpoint state:**
 
 ```bash
-# 1. Verify correct directory (CRITICAL)
-pwd  # Must match plan's target directory
-cd <plan-target-directory>  # If not already there
-
-# 2. Verify build passes
-npm run build
-
-# 3. Verify test baseline (establishes what should pass)
+# 1. Verify test baseline (establishes what should pass)
 npm run test
 
-# 4. Check working tree is clean
-git status
+# 2. Check git status ONLY IF:
+#    - No checkpoint exists, OR
+#    - Checkpoint is stale (last_commit doesn't match HEAD), OR
+#    - Checkpoint shows working_tree_clean: false
+#    OTHERWISE: Skip - checkpoint already confirms clean state
+git status  # Conditional
+```
+
+**Skip these (redundant):**
+- ~~`pwd`~~ - Working directory is already known from Claude Code's environment context
+- ~~`npm run build`~~ - Build was verified at end of previous session. If checkpoint shows task completed, build already passed.
+- ~~`cd <plan-target-directory>`~~ - Use absolute paths instead. Only cd if plan explicitly requires different directory.
+
+**Conditional git status logic:**
+```
+If checkpoint exists AND checkpoint.git.working_tree_clean == true AND checkpoint.git.last_commit == HEAD:
+  → Skip git status (already verified)
+Else:
+  → Run git status (detect uncommitted changes from crashed sessions or external modifications)
 ```
 
 **Output a status summary:**
 ```
 Pre-flight check:
-- Directory: ✅ /path/to/target
-- Build: ✅ passed
 - Tests: ✅ X passed, Y skipped
-- Git: ✅ clean working tree
+- Git: ✅ clean (from checkpoint) OR ✅ verified clean
 ```
 
-**If ANY pre-flight step fails:**
+**If pre-flight fails:**
 - Report failure with details
 - Do NOT proceed
 - Suggest: "Fix issues and re-run `/execute-plan`"
@@ -201,15 +220,14 @@ Do NOT proceed to the next task until all checklist items show completed.
 | Step | content | activeForm |
 |------|---------|------------|
 | 1 | Save checkpoint: task started | Saving task started checkpoint |
-| 2 | Verify directory matches plan target | Verifying target directory |
-| 3 | Search for existing implementation | Searching for existing implementation |
-| 4 | Execute task steps | Implementing task |
-| 5 | Run task verification command | Running verification |
-| 6 | Run build (npm run build) | Building project |
-| 7 | Run code review (/pr-review-toolkit:review-pr staged) | Running code review |
-| 8 | Fix critical issues (max 2 iterations) | Fixing review issues |
-| 9 | Commit changes | Committing changes |
-| 10 | Save checkpoint: task completed | Saving task completed checkpoint |
+| 2 | Search for existing implementation | Searching for existing implementation |
+| 3 | Execute task steps | Implementing task |
+| 4 | Run task verification command | Running verification |
+| 5 | Run build (npm run build) | Building project |
+| 6 | Run code review (/pr-review-toolkit:review-pr staged) | Running code review |
+| 7 | Fix critical issues (max 2 iterations) | Fixing review issues |
+| 8 | Commit changes | Committing changes |
+| 9 | Save checkpoint: task completed | Saving task completed checkpoint |
 
 <search_first_guardrail>
 Before implementing ANY task, search the codebase first:
@@ -228,17 +246,16 @@ Run `/pr-review-toolkit:review-pr staged` before committing.
 **If executing directly:**
 
 1. Run `/checkpoint <plan> <task> started`
-2. Verify directory with `pwd` - must be in plan's target directory
-3. Read task's Context Requirements (required files)
-4. Execute task steps as written in plan
-5. Run task's Verify step
-6. Run `/pr-review-toolkit:review-pr staged` (see mandatory_code_review above)
-7. Fix critical issues (max 2 iterations)
-8. Commit with descriptive message
-9. Run `/checkpoint <plan> <task> completed`
-10. Provide handoff notes when prompted
+2. Read task's Context Requirements (required files)
+3. Execute task steps as written in plan (use absolute paths)
+4. Run task's Verify step
+5. Run `/pr-review-toolkit:review-pr staged` (see mandatory_code_review above)
+6. Fix critical issues (max 2 iterations)
+7. Commit with descriptive message
+8. Run `/checkpoint <plan> <task> completed`
+9. Provide handoff notes when prompted
 
-**After completing all steps:** Verify your TodoWrite list shows all 10 items as `completed` before announcing task completion.
+**After completing all steps:** Verify your TodoWrite list shows all 9 items as `completed` before announcing task completion.
 
 **If dispatching to sub-agent:**
 
