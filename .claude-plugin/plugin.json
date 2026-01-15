@@ -1,10 +1,10 @@
 {
   "name": "imai-dev",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Plan execution framework with checkpoint-based session management, context loading, and orchestrated task dispatch",
   "author": {
     "name": "Ariel"
   },
   "keywords": ["planning", "execution", "checkpoints", "session-management"]
-  
+
 }
