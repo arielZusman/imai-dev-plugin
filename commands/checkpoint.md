@@ -38,8 +38,18 @@ Read the existing checkpoint file before updating. Do not assume current state -
 When this command is invoked:
 
 1. **Parse the plan path** to derive checkpoint location:
+
+   **If path contains `/intro.md` (multi-file subdirectory format):**
+   - Plan folder: `docs/plans/2026-01-08-feature-name/`
+   - Intro: `docs/plans/2026-01-08-feature-name/intro.md`
+   - Checkpoint: `docs/plans/2026-01-08-feature-name/checkpoint.md` (in same folder)
+
+   **If path ends with `.md` (single-file format):**
    - Plan: `docs/plans/2026-01-08-feature-name.md`
+   - Slug: `2026-01-08-feature-name` (remove `.md`)
    - Checkpoint: `docs/plans/.state/2026-01-08-feature-name.checkpoint.md`
+
+   **Key difference:** Multi-file stores checkpoint inside plan folder. Single-file uses `.state/` folder.
 
 2. **Read existing checkpoint** if it exists, otherwise create new one.
 
@@ -62,7 +72,7 @@ When this command is invoked:
      git status --porcelain | wc -l   # 0 = clean
      ```
    - **Generate continuation prompt** (see below)
-   - Check rotation heuristic
+   - **Enforce session stop** (one task per session policy - see Step 4)
 
    **If `error`:**
    - Prompt for error description
@@ -88,12 +98,19 @@ When this command is invoked:
    - Code review cannot be skipped
    - Checkpoint state is always current
 
-5. **Write updated checkpoint** to `docs/plans/.state/<plan-slug>.checkpoint.md`
+5. **Write updated checkpoint** to derived path:
+   - Multi-file: `docs/plans/<plan-folder>/checkpoint.md`
+   - Single-file: `docs/plans/.state/<plan-slug>.checkpoint.md`
+
+   **Multi-file format note:** The checkpoint file is the primary state store.
+   - Task files (`task-N.md`) remain immutable after creation
+   - The intro file's Execution Log is the secondary state for human readability
+   - When updating status, also update the intro file's Execution Log table if multi-file format
 
 6. **Verify checkpoint was persisted:**
    ```bash
    # Verify file exists and is readable
-   cat docs/plans/.state/<plan-slug>.checkpoint.md | head -20
+   cat <checkpoint-path> | head -20
    ```
 
    **If verification fails:**
@@ -103,7 +120,7 @@ When this command is invoked:
 
 7. **Output summary:**
    ```
-   ✓ Checkpoint persisted: docs/plans/.state/<plan-slug>.checkpoint.md
+   ✓ Checkpoint persisted: <checkpoint-path>
    - Task: <task_number>
    - Status: <status>
    - Tasks this session: <count>
@@ -168,6 +185,7 @@ continuation:
 
 ## Example Workflow
 
+**Single-file format:**
 ```
 # Starting a task
 /checkpoint docs/plans/2026-01-08-auth-feature.md 3 started
@@ -181,6 +199,17 @@ continuation:
 # If blocked
 /checkpoint docs/plans/2026-01-08-auth-feature.md 3 blocked
 ```
+Creates checkpoint at: `docs/plans/.state/2026-01-08-auth-feature.checkpoint.md`
+
+**Multi-file format (subdirectory):**
+```
+# Starting a task (use intro path)
+/checkpoint docs/plans/2026-01-08-auth-feature/intro.md 3 started
+
+# After completing the task
+/checkpoint docs/plans/2026-01-08-auth-feature/intro.md 3 completed
+```
+Creates checkpoint at: `docs/plans/2026-01-08-auth-feature/checkpoint.md` (in same folder as intro)
 
 ## Integration with Execution Workflow
 
