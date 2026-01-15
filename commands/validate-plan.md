@@ -17,8 +17,9 @@ The plan-validator agent will:
 2. Check architectural alignment with the codebase
 3. Verify pattern consistency
 4. **Validate task scoping** (see below)
-5. Identify risks and gaps
-6. Generate actionable recommendations
+5. **Validate enrichment standards** (for enriched plans - see below)
+6. Identify risks and gaps
+7. Generate actionable recommendations
 
 ## Task Scoping Validation
 
@@ -44,3 +45,20 @@ For each task:
 Report: "Task [N] violates scoping rule: '[title]' contains multiple unrelated concerns. Split into separate tasks."
 
 This ensures each task = one focus = one commit = one review cycle.
+
+## Enrichment Standards Validation
+
+For enriched plans (in `docs/plans/`), the validator checks:
+
+| Requirement | What's Validated |
+|-------------|------------------|
+| Fresh Session Entry Point | Reading order for session resume exists |
+| Why field format | Business + Technical context, not generic |
+| Time estimates | Per-task time estimates present |
+| Context Verify notes | "What to check" for each required file |
+| Rollback commands | Recovery path in Failure Modes |
+| Task 0 | Prerequisite verification before Task 1 |
+| Architecture | Written in prose, not bullets |
+| Migration patterns | Before/after examples (upgrade plans only) |
+
+These ensure plans are execution-ready for fresh Claude sessions with zero prior context.

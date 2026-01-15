@@ -6,21 +6,26 @@ Verify each item before saving the enriched plan.
 
 ### Plan Structure
 - [ ] **Project context** - Repo, service, branch
+- [ ] **Fresh Session Entry Point** - Reading order for session resume (git state, execution log, checkpoint, context)
 - [ ] **Goal** - One sentence summary
-- [ ] **Architecture** - Design approach
-- [ ] **Execution Workflow section** - At TOP (after Architecture, BEFORE tasks) with mandatory per-task cycle
+- [ ] **Architecture** - Design approach in prose (2-3 sentences, avoid bullets)
+- [ ] **Execution Workflow section** - At TOP (after Architecture, BEFORE tasks) with per-task cycle
 - [ ] **Relevant code context** - Key snippets the executing Claude needs
+- [ ] **Migration patterns** - For upgrade plans, include before/after examples
 
 ### Per-Task Requirements
+- [ ] **Task 0 for prerequisites** - Explicit verification before Task 1 (see below)
+- [ ] **Why field with Business + Technical** - Both contexts explained, not just "needed for feature"
+- [ ] **Time estimate** - ~15 min (🟢), ~30 min (🟡), ~1 hr (🔴)
 - [ ] **Exact file paths** - With line numbers for modifications
-- [ ] **Context Requirements** - REQUIRED vs REFERENCE files per task (see below)
+- [ ] **Context Requirements with Verify notes** - REQUIRED vs REFERENCE files, plus what to check in each (see below)
 - [ ] **Test file discovery** - Related .spec.ts files with mock locations (see below)
 - [ ] **File checksums** - For modified files, enables skip-if-already-done (see below)
 - [ ] **Clear intent or exact content** - Intent for logic, exact content for templates/config
 - [ ] **Step granularity** - Each step is ONE action (2-5 min), not a bundle of actions
 - [ ] **Commands with expected output** - What to run, what specific output to expect
 - [ ] **Verification per task** - How to confirm completion
-- [ ] **Failure modes** - "If X happens, likely cause is Y, fix by Z" (see below)
+- [ ] **Failure modes with Rollback** - "If X happens, likely cause is Y, fix by Z" plus rollback command (see below)
 - [ ] **Handoff notes placeholder** - Space to document what next task needs to know
 - [ ] **Per-task checklist** - Including checkpoint start/complete calls
 
@@ -55,16 +60,108 @@ Verify each item before saving the enriched plan.
 
 ---
 
+## Why Field Guidelines
+
+Each task should explain why it matters, not just what to do.
+
+**Format:**
+```markdown
+**Why this task matters:**
+- **Business:** [How this serves the user/product goal]
+- **Technical:** [Why this approach/order is correct]
+```
+
+**Guidelines:**
+- **Business context:** What user-facing or operational problem does this solve?
+- **Technical context:** Why this approach vs. alternatives? Why this order?
+- **Avoid:** Generic phrases like "needed for the feature" - be specific
+
+**Good example:**
+```markdown
+**Why this task matters:**
+- **Business:** Users currently see stale data after refresh; this ensures real-time sync
+- **Technical:** Must run before Task 3 because the cache invalidation depends on the new event handler
+```
+
+---
+
+## Time Estimates
+
+Add per-task time estimate to help users plan sessions.
+
+**Format:**
+```markdown
+**Estimated time:** ~15 min | ~30 min | ~1 hr
+```
+
+**Guidelines based on complexity:**
+- 🟢 Simple (< 20 lines): ~15 min
+- 🟡 Moderate (20-50 lines): ~30 min
+- 🔴 Complex (50+ lines): ~1 hr
+
+These help users decide if a task fits remaining session time.
+
+---
+
+## Task 0: Prerequisite Verification
+
+Every plan should include Task 0 to verify prerequisites before starting.
+
+**Format:**
+```markdown
+### Task 0: Verify Prerequisites
+
+**Complexity:** 🟢 Simple
+**Estimated time:** ~5 min
+**Dispatch:** direct
+
+**Steps:**
+1. `node --version` → expect v18.19.0+
+2. `npm --version` → expect 9+
+3. [Project-specific check]
+
+**Verify:** All commands return expected output.
+
+**Checklist:**
+- [ ] All prerequisites verified
+- [ ] Ready to proceed with Task 1
+```
+
+---
+
+## Content Format
+
+Balance prose and lists appropriately.
+
+**Use prose for:**
+- Architecture section (2-3 flowing sentences)
+- Why sections (explanatory context)
+- Design rationale
+
+**Use lists for:**
+- Steps (discrete actions)
+- Files (enumerated items)
+- Checklists (completion tracking)
+
+**Use natural language:**
+- Prefer direct imperatives over MUST/CRITICAL markers
+- Save emphasis for genuine security or data-loss scenarios
+- Example: "Complete the review step before committing" vs "You MUST NOT skip the review step"
+
+---
+
 ## Context Requirements
 
-Each task should specify files the executor MUST re-read before starting.
+Each task should specify files the executor must re-read before starting, plus what to verify in each.
 
 **Format:**
 ```markdown
 **Context Requirements:**
 - **Required** (must re-read before starting):
   - `src/services/auth.service.ts` - sections: validateToken, refreshToken
+    - **Verify:** Still has old API signature that we're changing
   - `src/types/auth.types.ts` - all
+    - **Verify:** AuthResponse interface exists with expected fields
 - **Reference** (consult if needed):
   - `docs/auth-flow.md` - sections: Token Lifecycle
 ```
@@ -72,8 +169,14 @@ Each task should specify files the executor MUST re-read before starting.
 **Guidelines:**
 - **Required**: Files that will be modified or whose behavior must be understood
 - **Reference**: Background context, architecture docs, related but not modified files
+- **Verify notes**: What state the file should be in, what pattern to look for
 - Include section hints when file is large (don't re-read entire 500-line file)
 - For TDD tasks, required includes test file from previous task
+
+**Why Verify notes matter:**
+- Prevents reading a file without knowing what you're checking
+- Catches unexpected changes from previous tasks or other sessions
+- Confirms assumptions before implementation begins
 
 ---
 
@@ -162,7 +265,7 @@ npm info @angular/core@19 peerDependenciesMeta
 
 ## Failure Modes
 
-Document common failure patterns to help executor self-diagnose.
+Document common failure patterns and rollback commands to help executor self-diagnose and recover.
 
 **Format:**
 ```markdown
@@ -170,6 +273,7 @@ Document common failure patterns to help executor self-diagnose.
 - **If build fails with "Cannot find module":** Likely missing import. Check imports at top of file.
 - **If tests fail with "timeout":** Async operation not awaited. Check for missing `await`.
 - **If [symptom]:** Likely cause is [X]. Fix by [Y].
+- **Rollback:** `git checkout HEAD -- [files modified]`
 ```
 
 **Common patterns to document:**
@@ -179,6 +283,14 @@ Document common failure patterns to help executor self-diagnose.
 - Order-of-operations issues
 - Environment variable requirements
 - Database migration dependencies
+
+**Rollback patterns by task type:**
+- **File changes:** `git checkout HEAD -- path/to/files`
+- **Package updates:** Revert package.json + `npm ci`
+- **Migrations:** `npm run migration:revert`
+- **Multi-file feature:** `git stash` or `git reset HEAD~1`
+
+See [FAILURE-MODES-EXAMPLES.md](FAILURE-MODES-EXAMPLES.md) for comprehensive examples.
 
 **When to include:**
 - Complex tasks (🟡/🔴 complexity)

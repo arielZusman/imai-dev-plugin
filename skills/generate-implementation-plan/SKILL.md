@@ -41,6 +41,29 @@ metadata:
 
 The enriched plan is for a **fresh Claude session** with zero prior context.
 
+### Migration Patterns (for upgrade plans)
+
+For plans involving syntax migrations or API changes, include before/after examples in the "Relevant Code Context" section. See [MIGRATION-PATTERNS.md](references/MIGRATION-PATTERNS.md) for common patterns.
+
+Example format:
+```markdown
+### Migration Pattern: *ngIf to @if
+
+**Before:**
+```html
+<div *ngIf="user">{{ user.name }}</div>
+```
+
+**After:**
+```html
+@if (user) {
+  <div>{{ user.name }}</div>
+}
+```
+
+**Notes:** Remove ng-template wrappers when using @else
+```
+
 - Include all context inline (no memory of your conversation)
 - Be explicit about file locations and patterns
 - Reference relevant code snippets directly in the plan
@@ -158,6 +181,7 @@ Without these, executors will skip reviews because the instructions are too far 
 - **Plan template**: [TEMPLATE.md](assets/TEMPLATE.md)
 - **Enrichment checklist**: [ENRICHMENT-CHECKLIST.md](references/ENRICHMENT-CHECKLIST.md)
 - **Failure modes examples**: [FAILURE-MODES-EXAMPLES.md](references/FAILURE-MODES-EXAMPLES.md)
+- **Migration patterns**: [MIGRATION-PATTERNS.md](references/MIGRATION-PATTERNS.md)
 - **Execution guide**: [EXECUTION-GUIDE.md](references/EXECUTION-GUIDE.md)
 
 ## Execution Handoff

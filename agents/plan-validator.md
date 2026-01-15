@@ -62,7 +62,26 @@ For each task, verify:
 **If violations found:**
 Add to Critical Issues: "Task [N] violates scoping rule. Split into separate tasks."
 
-### 6. Risk & Gap Identification
+### 6. Enrichment Standards Validation
+
+For enriched plans (in `docs/plans/`), verify:
+
+| Requirement | Check | Red Flag |
+|-------------|-------|----------|
+| Fresh Session Entry Point | Section exists after Project Context | Missing or incomplete |
+| Why field format | Each task has Business + Technical | Generic "needed for feature" |
+| Time estimates | Each task has ~15m/~30m/~1hr | Missing estimates |
+| Context Requirements | Has Verify notes | "Read X" without what to check |
+| Failure Modes | Includes Rollback command | No recovery path |
+| Task 0 | Prerequisites verification exists | Jumps straight to Task 1 |
+| Architecture | Written in prose (2-3 sentences) | Bullet point list |
+
+For upgrade/migration plans, also check:
+- Migration Patterns section with before/after examples
+
+**Skip this section** for raw plans in `~/.claude/plans/` (not yet enriched).
+
+### 7. Risk & Gap Identification
 - Search for conflicting implementations
 - Identify missing: tests, types, error handling, config updates
 - Check cross-service dependencies and security concerns
@@ -96,6 +115,18 @@ Add to Critical Issues: "Task [N] violates scoping rule. Split into separate tas
 |------|-------------------------------------|-------|
 | Task 1 | ✅/❌ | [details] |
 | Task 2 | ✅/❌ | [details] |
+
+## Enrichment Standards (for enriched plans only)
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Fresh Session Entry Point | ✅/❌ | [details] |
+| Why field format | ✅/❌ | [details] |
+| Time estimates | ✅/❌ | [details] |
+| Context Verify notes | ✅/❌ | [details] |
+| Rollback commands | ✅/❌ | [details] |
+| Task 0 prerequisites | ✅/❌ | [details] |
+| Architecture prose | ✅/❌ | [details] |
+| Migration patterns | ✅/❌/N/A | [details] |
 
 ## Risk Assessment
 ### Critical Issues (Must Fix)

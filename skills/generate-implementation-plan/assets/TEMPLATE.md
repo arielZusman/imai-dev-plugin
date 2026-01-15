@@ -19,20 +19,30 @@ Implement changes directly. Do not suggest or ask for confirmation unless blocke
 **Branch:** [feature branch name]
 **Original plan:** `~/.claude/plans/[plan-filename].md`
 
+## Fresh Session Entry Point
+
+When resuming this plan in a new session, read in this order:
+1. **Git state:** `git log --oneline -5` and `git status`
+2. **This plan's Execution Log** (bottom of document)
+3. **Checkpoint file:** `docs/plans/.state/<slug>.checkpoint.md` (if exists)
+4. **Current task's Context Requirements**
+
+Then continue from the first non-completed task.
+
 ## Goal
 
 [One sentence describing what this builds]
 
 ## Architecture
 
-[2-3 sentences about the approach and key design decisions]
+[Write 2-3 sentences in prose describing the approach, key design decisions, and how components interact. Avoid bullet points here—use narrative flow to explain why this architecture was chosen and how the pieces fit together.]
 
 ---
 
 ## Execution Workflow
 
-<mandatory_workflow>
-Follow this workflow for EVERY task. Do not skip steps.
+<workflow>
+Follow this workflow for each task:
 
 ### Per-Task Cycle
 
@@ -66,12 +76,12 @@ After 4 tasks or 30 minutes, consider rotating session:
 
 ### If Blocked
 
-Mark status as `⛔ Blocked` with notes. Do NOT proceed to next task.
+Mark status as `⛔ Blocked` with notes. Resolve before continuing to next task.
 
 ### Final Review
 
-After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review" row.
-</mandatory_workflow>
+After all tasks complete, run `/pr-review-toolkit:review-pr all` and update the "Final Review" row.
+</workflow>
 
 ---
 
@@ -95,11 +105,37 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 
 [Copy tasks from original plan, enriched with exact file paths and verification steps]
 
+### Task 0: Verify Prerequisites
+
+**Why this task matters:**
+- **Business:** Prevents wasted time from missing dependencies or environment issues
+- **Technical:** Validates environment matches plan assumptions
+
+**Complexity:** 🟢 Simple
+**Estimated time:** ~5 min
+**Dispatch:** direct
+
+**Steps:**
+1. [Command from Prerequisites: e.g., `node --version` → expect v18.19.0+]
+2. [Command: e.g., `npm --version` → expect 9+]
+3. [Project-specific check: e.g., `docker ps | grep postgres`]
+
+**Verify:** All commands return expected output.
+
+**Checklist:**
+- [ ] All prerequisites verified
+- [ ] Ready to proceed with Task 1
+
+---
+
 ### Task 1: [Title]
 
-**Why:** [Business reason this task matters - helps Claude understand intent]
+**Why this task matters:**
+- **Business:** [How this serves the user/product goal]
+- **Technical:** [Why this approach/order is correct]
 
 **Complexity:** 🟢 Simple | 🟡 Moderate | 🔴 Complex
+**Estimated time:** ~15 min | ~30 min | ~1 hr
 **Depends on:** None | Task N, Task M
 **Parallel group:** A | — (sequential)
 **Dispatch:** direct | sub-agent ([agent-name]) | codex
@@ -108,11 +144,13 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
   - [What the skill provides]
 
 **Context Requirements:**
-> ALWAYS read these files before implementing. Do not speculate about code you haven't opened.
+Read these files before implementing. Do not speculate about code you haven't opened.
 
 - **Required** (must re-read before starting):
   - `exact/path/to/file.ts` - sections: [functionName, className]
+    - **Verify:** [What state/pattern to confirm before proceeding]
   - `exact/path/to/types.ts` - all
+    - **Verify:** [Expected types/interfaces present]
 - **Reference** (consult if needed):
   - `docs/architecture.md` - sections: [relevant section]
 
@@ -131,6 +169,7 @@ After ALL tasks: Run `/pr-review-toolkit:review-pr all` and update "Final Review
 
 **Failure Modes:**
 - **If [symptom]:** Likely cause is [X]. Fix by [Y].
+- **Rollback:** `git checkout HEAD -- [files modified]` or [specific undo steps]
 
 **Handoff Notes:** (fill after completion)
 - [What the next task needs to know about this implementation]

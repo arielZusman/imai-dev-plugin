@@ -129,6 +129,44 @@ Common failure patterns to include in enriched plans. Copy relevant patterns to 
 - **If circular update detected:** State change triggering effect that changes same state. Break cycle with distinctUntilChanged or debounce.
 ```
 
+## Rollback Patterns
+
+Each task should include a rollback command specific to the changes made.
+
+### File Changes
+
+```markdown
+**Rollback:** `git checkout HEAD -- src/services/auth.service.ts src/types/auth.types.ts`
+```
+
+### Package Updates
+
+```markdown
+**Rollback:**
+- Revert package.json: `git checkout HEAD -- package.json package-lock.json`
+- Reinstall: `npm ci`
+```
+
+### Database Migrations
+
+```markdown
+**Rollback:** `npm run migration:revert` (reverts last migration)
+```
+
+### Config Changes
+
+```markdown
+**Rollback:** `git checkout HEAD -- .env.example src/config/*.ts`
+```
+
+### Multi-File Feature
+
+```markdown
+**Rollback:** `git stash` or `git reset HEAD~1` (if committed)
+```
+
+---
+
 ## Usage in Plans
 
 When enriching a plan, select 2-4 relevant failure modes per task based on:
