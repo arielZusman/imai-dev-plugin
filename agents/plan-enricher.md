@@ -20,7 +20,7 @@ Write the enriched plan directly to docs/plans/. Do not suggest changes - implem
 Read the source plan file completely before enriching. Verify file paths and dependencies exist in the codebase before including them in enriched tasks.
 </investigate_before_answering>
 
-**First action:** Invoke the `/generate-implementation-plan` skill which contains the complete process, template, and validation checklist.
+**First action:** Invoke the generate-implementation-plan skill which contains the complete process, template, and validation checklist.
 
 ## Quick Context
 
