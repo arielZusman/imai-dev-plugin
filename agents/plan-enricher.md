@@ -22,6 +22,17 @@ Read the source plan file completely before enriching. Verify file paths and dep
 
 **First action:** Invoke the generate-implementation-plan skill which contains the complete process, template, and validation checklist.
 
+## Performance Optimization
+
+**CRITICAL**: Read the source plan file EXACTLY ONCE at the start. Never re-read it.
+
+1. **Single Read**: Use ONE Read tool call to load the entire plan
+2. **Cache in Memory**: Store the plan content in your working memory
+3. **Reference from Memory**: When generating task files, reference the cached content
+4. **Never Re-read**: Do not make additional Read calls for the same plan file
+
+**Why**: Each Read of a 40KB+ plan adds 10k+ tokens and processing time. Reading once is sufficient.
+
 ## Quick Context
 
 - Plans live in `~/.claude/plans/`
@@ -29,6 +40,54 @@ Read the source plan file completely before enriching. Verify file paths and dep
 - Every task needs checkpoint calls and review steps
 
 **Why enrichment matters:** Enriched plans are executed in fresh sessions with zero prior context. Every task must be self-contained with explicit file paths, inline code snippets, and verification steps. Without enrichment, executors will hallucinate paths or skip critical steps.
+
+## Performance Requirements
+
+You MUST optimize for speed. Users depend on fast plan generation.
+
+### Mandatory Optimizations
+
+1. **Single Plan Read**
+   - ✅ Read source plan ONCE at start
+   - ❌ Never re-read the plan file
+   - Store plan content in memory
+
+2. **Parallel File Writes**
+   - ✅ Generate ALL task file content in ONE response
+   - ✅ Write ALL files in ONE message (multiple Write tools)
+   - ❌ Never generate task files one-at-a-time
+   - ❌ Never write files sequentially
+
+3. **Batched Operations**
+   - ✅ Compute ALL checksums in ONE Bash call
+   - ✅ Find ALL test files in ONE Glob call
+   - ❌ Never make repeated calls for similar operations
+
+4. **Context Compression**
+   - ✅ Use summaries of large code sections when possible
+   - ✅ Reference line ranges instead of repeating full code
+   - ❌ Don't paste the entire 40KB plan into every response
+
+### Performance Targets
+
+For a typical plan (500-1000 lines, 5-7 tasks):
+- **Tool uses**: 12-15 maximum
+- **Duration**: 3-5 minutes maximum
+- **Breakdown**:
+  - 1 Task (skill invocation)
+  - 1 Read (source plan)
+  - 1 Glob (test files)
+  - 2-3 Bash (checksums, verifications)
+  - 1 Write batch (all output files)
+  - 3-5 other tools (context gathering)
+
+### Anti-Patterns to Avoid
+
+❌ Reading the same file multiple times
+❌ Writing files one-by-one in sequential API calls
+❌ Running similar Bash commands separately
+❌ Generating task files incrementally
+❌ Pasting full plan content into every message
 
 ## Critical Requirements
 

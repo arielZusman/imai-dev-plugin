@@ -41,20 +41,52 @@ metadata:
 8. **Enrich** - Add self-contained header and inline code context
 9. **Add verification** - How to confirm each task is complete
 10. **Add skill recommendations** - Which skills to invoke per task
-11. **Generate output:**
+11. **Generate ALL output content at once:**
+
+    **CRITICAL OPTIMIZATION**: Generate content for ALL files (intro + all tasks) in a single LLM response.
+    Do NOT generate task files one-by-one.
 
     **If multi-file format:**
-    - Create intro file from [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md)
-    - Create task files from [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+    - In ONE response, generate:
+      * Complete intro.md content from [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md)
+      * Complete task-0.md content (if exists) from [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+      * Complete task-1.md content from [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+      * Complete task-2.md content from [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+      * ... (all task files)
     - Build Task Index in intro with relative links to task files
     - Code snippets go in intro only; task files reference "See intro"
+    - Store each file's content in memory with clear labels:
+      ```
+      INTRO_CONTENT = "# Fix Slow..."
+      TASK_0_CONTENT = "# Task 0:..."
+      TASK_1_CONTENT = "# Task 1:..."
+      ```
 
     **If single-file format:**
-    - Apply [TEMPLATE.md](assets/TEMPLATE.md) (existing behavior)
+    - Generate the complete single file content using [TEMPLATE.md](assets/TEMPLATE.md)
 
-12. **Save files:**
-    - Multi-file: Create folder `docs/plans/YYYY-MM-DD-<feature>/`, write `intro.md` + all `task-N.md` files into it
-    - Single-file: Write `docs/plans/YYYY-MM-DD-<feature>.md`
+12. **Write ALL files in parallel:**
+
+    **CRITICAL OPTIMIZATION**: Use a SINGLE message with MULTIPLE Write tool calls.
+    Do NOT write files sequentially.
+
+    **Multi-file format:**
+    First, create the directory if needed:
+    ```markdown
+    Creating directory and writing all 7 plan files in parallel:
+    ```
+
+    Then make ONE tool call message containing ALL Write operations:
+    - Write(docs/plans/YYYY-MM-DD-<feature>/intro.md, INTRO_CONTENT)
+    - Write(docs/plans/YYYY-MM-DD-<feature>/task-0.md, TASK_0_CONTENT)
+    - Write(docs/plans/YYYY-MM-DD-<feature>/task-1.md, TASK_1_CONTENT)
+    - Write(docs/plans/YYYY-MM-DD-<feature>/task-2.md, TASK_2_CONTENT)
+    - ... (all task files)
+
+    **Single-file format:**
+    - Single Write call: Write(docs/plans/YYYY-MM-DD-<feature>.md, CONTENT)
+
+    **Why**: Parallel writes execute simultaneously. Sequential writes wait for each API roundtrip (~26-53s per file).
 13. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md` with format indicator
 
 ## Key Principles
@@ -126,13 +158,51 @@ Example format:
 
 Pre-compute context that would otherwise require tool calls during execution:
 
-### Test File Discovery
+### Test File Discovery (Batched)
+
+**CRITICAL**: Use ONE Glob call to find all test files at once.
+
+**Instead of:**
+```bash
+Glob for auth.service.spec.ts    # Call 1
+Glob for user.service.spec.ts    # Call 2
+Glob for api.service.spec.ts     # Call 3
+```
+
+**Do this:**
+```bash
+Glob for {auth,user,api}.service.spec.ts
+# OR
+Glob for **/*.service.spec.ts (then filter)
+```
+
+**Result**: One Glob call instead of N calls for N files.
+
 For each modified file, include:
 - Related `.spec.ts` file path
 - Mock setup location (line numbers)
 - Required mock changes based on interface modifications
 
-### File Checksums
+### File Checksums (Batched)
+
+**CRITICAL**: Compute checksums for ALL files in a SINGLE Bash call.
+
+**Instead of:**
+```bash
+md5 -q /path/to/file1.ts | cut -c1-8  # Call 1
+md5 -q /path/to/file2.ts | cut -c1-8  # Call 2
+md5 -q /path/to/file3.ts | cut -c1-8  # Call 3
+```
+
+**Do this:**
+```bash
+for file in /path/to/file1.ts /path/to/file2.ts /path/to/file3.ts; do
+  echo "$file: $(md5 -q "$file" | cut -c1-8)"
+done
+```
+
+**Result**: One Bash call instead of N calls for N files.
+
 For each file to be modified:
 - Compute `md5 -q <file> | cut -c1-8`
 - Include "lines to modify" range
