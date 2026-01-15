@@ -1,0 +1,6 @@
+- [ ] READ: Review [[{{FILE_PATH}}]] (lines {{START_LINE}}-{{END_LINE}})
+- [ ] IMPLEMENT: {{TASK_DESCRIPTION}}
+- [ ] VERIFY: {{VERIFICATION_COMMAND}}
+- [ ] REVIEW: /pr-review-toolkit:review-pr staged
+- [ ] CHECKPOINT: /checkpoint {{PLAN_NAME}} {{TASK_ID}} completed
+- [ ] STOP: Session pauses - user runs /execute-plan to continue

@@ -41,10 +41,33 @@ metadata:
 8. **Enrich** - Add self-contained header and inline code context
 9. **Add verification** - How to confirm each task is complete
 10. **Add skill recommendations** - Which skills to invoke per task
-11. **Generate ALL output content at once:**
+11. **Generate ALL output content at once with model selection:**
 
     **CRITICAL OPTIMIZATION**: Generate content for ALL files (intro + all tasks) in a single LLM response.
     Do NOT generate task files one-by-one.
+
+    **Model selection for content generation:**
+
+    **For each task:**
+
+    a) **Complex sections (use Sonnet):**
+       - Architecture analysis
+       - Code context extraction
+       - Custom failure modes
+       - Dependency discovery and conflict resolution
+       - Task complexity assignment
+
+    b) **Boilerplate sections (use templates + Haiku):**
+       - Load template from `assets/checklist-template.md`
+       - Substitute variables: {{TASK_NAME}}, {{FILE_PATH}}, etc.
+       - Use Haiku sub-agent for any custom text generation
+       - Standard verification steps (use verification-template.md)
+       - Common failure modes (use failure-modes-template.md)
+
+    c) **Generation strategy:**
+       - All Sonnet sections first (complex analysis)
+       - All template substitutions second (simple replacement)
+       - All Haiku sections last (parallel sub-agents for boilerplate)
 
     **If multi-file format:**
     - In ONE response, generate:
@@ -157,6 +180,41 @@ Example format:
 ## Context Optimization (Reduces Startup Tool Calls)
 
 Pre-compute context that would otherwise require tool calls during execution:
+
+### Code Structure Discovery (ast-grep Skill)
+
+**For TypeScript/JavaScript/Python files referenced in the plan:**
+
+**Before gathering context, invoke ast-grep skill for structure:**
+
+1. **Invoke ast-grep skill:**
+   ```markdown
+   Skill("ast-grep", args="Find all functions in src/service.ts")
+   ```
+
+2. **ast-grep returns signatures** (200-500 tokens):
+   - Function names with line numbers
+   - Class definitions with methods
+   - Import statements
+
+3. **Analyze signatures** to identify relevant code (2-3 functions typically)
+
+4. **Read only relevant sections:**
+   ```markdown
+   Read src/service.ts offset=<start_line> limit=<num_lines>
+   ```
+
+**When to use ast-grep:**
+- ✅ Finding function signatures before reading implementation
+- ✅ Locating class methods across large files
+- ✅ Discovering imports/exports for dependency analysis
+- ✅ Identifying interface definitions for type context
+- ❌ Small files (< 100 lines) - just Read directly
+- ❌ Config files, JSON, YAML - no AST benefit
+
+**Result:** 50-80% token reduction for code context gathering
+
+**Important:** Always invoke the ast-grep skill explicitly using `Skill("ast-grep", args="...")` - Claude Code doesn't auto-invoke skills.
 
 ### Test File Discovery (Batched)
 

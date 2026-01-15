@@ -89,6 +89,68 @@ For a typical plan (500-1000 lines, 5-7 tasks):
 ❌ Generating task files incrementally
 ❌ Pasting full plan content into every message
 
+## Model Selection Strategy
+
+Use the appropriate model for each task type:
+
+**Sonnet (retain for complex analysis):**
+- Architecture decisions and trade-offs
+- Code context extraction and analysis
+- Dependency discovery and conflict resolution
+- Task complexity assignment
+- Custom failure mode analysis
+
+**Haiku (delegate for boilerplate):**
+- Per-task checklist generation (use checklist-template.md)
+- Standard verification steps (use verification-template.md)
+- Common failure modes (use failure-modes-template.md)
+- File header generation
+- Handoff notes structure
+
+**How to dispatch Haiku sub-agent:**
+```markdown
+Task("general-purpose", model="haiku", prompt="Generate checklist for {{TASK}} using template {{TEMPLATE_PATH}}")
+```
+
+**Template variable substitution:**
+Use bash `sed` for simple substitution:
+```bash
+sed "s/{{VAR}}/value/g" template.md
+```
+
+## AST-Based Code Analysis (ast-grep Skill)
+
+**When to invoke ast-grep skill instead of Read:**
+- Extracting function signatures from TypeScript/JavaScript/Python files
+- Finding class definitions and methods
+- Discovering imports and exports
+- Locating interface definitions
+- Any structural code pattern search
+
+**How to invoke:**
+```markdown
+Before reading code files, invoke the ast-grep skill:
+
+Skill("ast-grep", args="Find all async functions in src/service.ts")
+```
+
+**The ast-grep skill will:**
+1. Understand your query
+2. Create example code of the pattern
+3. Write the ast-grep rule (YAML or pattern)
+4. Test the rule
+5. Search the codebase and return results
+
+**Workflow with ast-grep:**
+1. **Invoke skill**: `Skill("ast-grep", args="Find all functions in <file>")`
+2. **Get signatures**: ast-grep returns function names + line numbers (200-500 tokens)
+3. **Analyze**: LLM identifies relevant 2-3 functions
+4. **Read targeted**: Use Read with line ranges for only those functions (2-5k tokens)
+
+**Result:** 50-80% token reduction vs reading entire files upfront
+
+**Important:** Always invoke the ast-grep skill explicitly - Claude doesn't auto-invoke skills. You must explicitly call `Skill("ast-grep", args="...")` when you need structural code search.
+
 ## Critical Requirements
 
 ### Context Optimization (Startup Tool Call Reduction)
