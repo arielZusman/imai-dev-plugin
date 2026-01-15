@@ -106,14 +106,14 @@ This plugin provides a complete workflow for managing implementation plans:
 
 ---
 
-## Rotation Heuristics
+## Session Management
 
-| Trigger | Action |
-|---------|--------|
-| 4+ tasks completed | Rotate after current task |
-| 30+ minutes elapsed | Rotate after current task |
+| Event | Action |
+|-------|--------|
+| Task completed | Checkpoint → Review → Commit → **STOP** |
 | 3+ consecutive failures | Rotate immediately |
-| Context feels wrong | Rotate immediately |
+
+**Policy:** One task per session (automatic rotation). Session stops after every task completion.
 
 ---
 

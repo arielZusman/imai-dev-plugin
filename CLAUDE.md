@@ -48,6 +48,12 @@ To continue: User runs `/execute-plan <plan-name>` in fresh session (checkpoint 
 
 **Why:** Fresh context per task ensures code review cannot be skipped and prevents context degradation.
 
+**Exceptions (user override only):**
+- User explicitly requests continuation via AskUserQuestion
+- Active debugging session (context needed for fix)
+
+**Note:** User accepts context degradation risk when overriding.
+
 ### Hard Blocks
 
 **NEVER use `--no-verify` without explicit user consent:**
