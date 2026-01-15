@@ -250,7 +250,8 @@ Check task's `Dispatch` field or use default rules:
 | `Dispatch: focused-task-executor` in task | Dispatch to focused-task-executor | Lightweight model for trivial edits |
 | `Dispatch: codex` in task | Delegate to Codex via MCP | User preference for Codex |
 | Complexity 🟢 + single file + < 30 lines | Dispatch to focused-task-executor | Cost-efficient lightweight model |
-| Complexity 🟢 + < 50 lines | Execute directly | Low overhead wins |
+| Complexity 🟢 + single file + 30-50 lines | Execute directly | Low overhead wins |
+| Complexity 🟢 + multiple files OR > 50 lines | Dispatch to sub-agent | Context isolation benefit |
 | Complexity 🟡/🔴 | Dispatch to sub-agent | Context isolation benefit |
 | TDD test task | Dispatch to test-writer | Fresh context for test design |
 | Implementation after tests | Dispatch to implementer | Isolation from test context |

@@ -219,9 +219,9 @@ Read these files before implementing. Do not speculate about code you haven't op
 | Task N | direct | Config/trivial change |
 
 **Dispatch guidelines:**
-- `direct`: Simple edits, config changes, < 50 lines modified
+- `direct`: Simple edits, config changes, single file with 30-50 lines modified
 - `focused-task-executor`: Single file, < 30 lines, mechanical changes (uses Haiku for cost efficiency)
-- `sub-agent`: TDD tests, complex implementation, code review
+- `sub-agent`: TDD tests, complex implementation, code review, multiple files OR > 50 lines
 - `codex`: User preference for OpenAI Codex (requires `/setup-codex` first)
 - Only delegate to sub-agents/codex when the task clearly benefits from a separate context
 
