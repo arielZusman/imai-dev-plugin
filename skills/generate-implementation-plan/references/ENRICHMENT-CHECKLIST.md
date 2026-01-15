@@ -2,7 +2,33 @@
 
 Verify each item before saving the enriched plan.
 
-## Required Content
+## Multi-File Format Validation
+
+When using multi-file format (>= 3 tasks), verify these additional items:
+
+### Intro File (`<plan-folder>/intro.md`)
+- [ ] **Format field** - `Format: multi-file` in Plan Metadata table
+- [ ] **Task Index table** - Links to all task files with relative paths (`./task-N.md`)
+- [ ] **Code snippets** - All snippets in "Relevant Code Context" section (NOT in task files)
+- [ ] **Execution Log** - Status table with row for each task (single source of truth)
+- [ ] **Migration patterns** - In intro only (if applicable)
+
+### Task Files (`<plan-folder>/task-N.md`)
+- [ ] **Reference header** - Links back to intro file (`./intro.md`) with "See intro for" note
+- [ ] **No duplicate code snippets** - Task files reference intro for code context
+- [ ] **Self-contained execution** - All steps, verification, failure modes included
+- [ ] **Checksums and test files** - Task-specific, not shared
+
+### Directory Structure
+- [ ] **Plan folder:** `docs/plans/YYYY-MM-DD-<feature-name>/`
+- [ ] **Intro file:** `intro.md` in plan folder
+- [ ] **Task files:** `task-0.md`, `task-1.md`, etc. in plan folder
+- [ ] **Checkpoint:** `checkpoint.md` in plan folder (created during execution)
+- [ ] **Task 0** - Prerequisites verification task exists
+
+---
+
+## Required Content (Both Formats)
 
 ### Plan Structure
 - [ ] **Project context** - Repo, service, branch
@@ -355,12 +381,16 @@ Plans should reference checkpoint workflow in execution steps.
 - [ ] `/checkpoint <plan> <task> completed`
 ```
 
-**Rotation heuristic reminder in workflow:**
+**Mandatory session stop reminder in workflow:**
 ```markdown
-### Rotation Heuristic
+### Session Stop
 
-After 4 tasks or 30 minutes, consider rotating session:
-1. Run `/checkpoint` to save state
-2. Clear session
-3. Run `/execute-plan <plan-name>` in fresh session
+**After EACH task:** Do NOT continue to next task in same session.
+
+**To continue:** Run `/execute-plan <plan-name>` in fresh session. Checkpoint state loads automatically.
+
+**Why this matters:**
+- Fresh context prevents degradation
+- Code review cannot be skipped
+- Failures are isolated to single tasks
 ```

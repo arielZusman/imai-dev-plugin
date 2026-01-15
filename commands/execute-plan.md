@@ -36,21 +36,62 @@ This command implements **lean orchestration**:
 - Checkpoint updates after each task (MANDATORY - do not skip)
 - Rotation recommendations based on task count/time
 
-## Step 1: Load Plan and State
+## Step 1: Detect Format and Load Plan
 
-**Locate files using deterministic paths (no Glob needed):**
+### 1.0 Detect Plan Format
+
+Check for multi-file format first (subdirectory), fall back to single-file:
+
+**Multi-file detection (subdirectory):**
 ```
-Plan: docs/plans/*$ARGUMENTS.plan*.md
+docs/plans/*$ARGUMENTS.plan*/intro.md
 ```
 
-**Construct checkpoint path directly from plan path:**
+**If folder with intro.md exists:** Multi-file format
+- Plan folder: `docs/plans/YYYY-MM-DD-feature/`
+- Intro: `docs/plans/YYYY-MM-DD-feature/intro.md`
+- Tasks: `docs/plans/YYYY-MM-DD-feature/task-N.md`
+- Checkpoint: `docs/plans/YYYY-MM-DD-feature/checkpoint.md`
+- Slug: folder name (e.g., `YYYY-MM-DD-feature`)
+
+**If folder does NOT exist:** Single-file format (legacy)
+- Plan: `docs/plans/*$ARGUMENTS.plan*.md`
+- Slug: `YYYY-MM-DD-feature` (remove `.md`)
+- Checkpoint: `docs/plans/.state/YYYY-MM-DD-feature.checkpoint.md`
+
+### 1.1 Construct Paths
+
+**Checkpoint path differs by format:**
+
+**Multi-file (subdirectory):**
 ```
-Plan path:       docs/plans/2026-01-14-feature.md
+Plan folder:     docs/plans/2026-01-14-feature/
+Checkpoint path: docs/plans/2026-01-14-feature/checkpoint.md
+```
+
+**Single-file (legacy):**
+```
+Slug:            2026-01-14-feature
 Checkpoint path: docs/plans/.state/2026-01-14-feature.checkpoint.md
 ```
 
-Transform: Replace `docs/plans/` with `docs/plans/.state/` and keep the same filename.
-Do NOT Glob for the checkpoint file - the path is deterministic.
+Do NOT Glob for the checkpoint file - the path is deterministic from format detection.
+
+### 1.2 Load Plan Content
+
+**If multi-file format:**
+1. Read intro file for:
+   - Task Index (list of task file paths)
+   - Execution Log (current state)
+   - Code Context (shared snippets)
+   - Orchestration Hints (parallel groups, dispatch decisions)
+2. Do NOT read all task files - only load current task file (in Step 1.5)
+
+**If single-file format:**
+- Read entire plan file (existing behavior)
+- Parse task list with metadata from within the file
+
+### 1.3 Parse Plan State
 
 **Parse plan for:**
 - Task list with metadata (complexity, dispatch hint, dependencies)
@@ -78,12 +119,10 @@ Do NOT Glob for the checkpoint file - the path is deterministic.
 
 3. Show handoff notes from previous task (if any)
 
-4. Check rotation heuristics:
-   - If `tasks_completed_this_session >= 4`: warn user
-   - If session has been running > 30 min: warn user
+4. Confirm session policy:
    ```
-   ⚠️ Rotation recommended: [reason]
-   Consider clearing session after completing current task.
+   ℹ️ Session stop after each task (automatic rotation)
+   Next task will run in fresh session via `/execute-plan <plan-name>`
    ```
 
 ## Step 1.5: Load Task-Specific Context
@@ -91,6 +130,21 @@ Do NOT Glob for the checkpoint file - the path is deterministic.
 <investigate_before_answering>
 Read the actual Context Requirements from the checkpoint or plan. Do not guess file paths or assume what context is needed.
 </investigate_before_answering>
+
+### For Multi-File Format
+
+1. **Get current task number** from checkpoint or Execution Log
+2. **Construct task file path:**
+   ```
+   <plan-folder>/task-<N>.md
+   Example: docs/plans/2026-01-14-feature/task-3.md
+   ```
+3. **Read the task file** - contains all task-specific details
+4. **For code snippets:** Task file says "See intro for code context"
+   - Read referenced snippets from intro's "Relevant Code Context" section
+5. **Read Context Requirements** listed in the task file
+
+### For Single-File Format
 
 **From checkpoint (preferred):**
 
@@ -105,11 +159,13 @@ context_requirements:
       - path: docs/auth-flow.md
 ```
 
-**Re-read only required files**, not the entire codebase.
-
 **From plan (fallback):**
 
-Read the task's "Context Requirements" field and re-read listed files.
+Read the task's "Context Requirements" field from within the plan file.
+
+### Both Formats
+
+**Re-read only required files**, not the entire codebase.
 
 **Output context summary:**
 ```markdown
@@ -191,7 +247,9 @@ Check task's `Dispatch` field or use default rules:
 |-----------|----------|-----------|
 | `Dispatch: direct` in task | Execute directly | Explicit instruction |
 | `Dispatch: sub-agent (X)` in task | Dispatch to agent X | Explicit instruction |
+| `Dispatch: focused-task-executor` in task | Dispatch to focused-task-executor | Lightweight model for trivial edits |
 | `Dispatch: codex` in task | Delegate to Codex via MCP | User preference for Codex |
+| Complexity 🟢 + single file + < 30 lines | Dispatch to focused-task-executor | Cost-efficient lightweight model |
 | Complexity 🟢 + < 50 lines | Execute directly | Low overhead wins |
 | Complexity 🟡/🔴 | Dispatch to sub-agent | Context isolation benefit |
 | TDD test task | Dispatch to test-writer | Fresh context for test design |
@@ -276,6 +334,35 @@ Run `/pr-review-toolkit:review-pr staged` before committing.
 6. If verification fails: retry once with feedback, then mark blocked
 7. Commit changes
 8. Run `/checkpoint <plan> <task> completed`
+
+**If dispatching to focused-task-executor (Haiku):**
+
+Use for 🟢 complexity, single-file, <30 line changes. This agent uses the Haiku model for cost efficiency.
+
+1. Run `/checkpoint <plan> <task> started`
+2. Build task prompt with FULL file content (Haiku needs explicit context)
+3. Dispatch via Task tool:
+   ```
+   Task tool:
+   - subagent_type: general-purpose
+   - model: haiku
+   - prompt: [built prompt - must include file content, not just paths]
+   - description: "Execute Task N: [title]"
+   ```
+4. Wait for agent completion
+5. Verify results:
+   - Check file was modified as expected
+   - Run verification step
+   - Run code review
+6. If verification fails or agent reports "blocked": do NOT retry with Haiku - escalate to direct execution or sub-agent
+7. Commit changes
+8. Run `/checkpoint <plan> <task> completed`
+
+**Focused-task-executor prompt requirements:**
+- Include FULL content of target file (not just path)
+- Specify exact change needed (no ambiguity)
+- Include verification command
+- Tell agent to report back if uncertain (no improvising)
 
 **After sub-agent completes:** Update your TodoWrite list to mark relevant items as `completed`. Verify all items complete before proceeding.
 
@@ -526,6 +613,18 @@ Rationale: Complex implementation, isolate from planning context
 ```
 Dispatch: direct
 Rationale: Config change, trivial
+```
+
+**Task: Add new import statement to service file (🟢 Simple)**
+```
+Dispatch: focused-task-executor
+Rationale: Single file, < 5 lines, mechanical change - ideal for Haiku
+```
+
+**Task: Rename function and update JSDoc (🟢 Simple)**
+```
+Dispatch: focused-task-executor
+Rationale: Single file, < 20 lines, clear transformation - cost-efficient with Haiku
 ```
 
 **Task: Implement data transformation pipeline (🟡 Moderate)**

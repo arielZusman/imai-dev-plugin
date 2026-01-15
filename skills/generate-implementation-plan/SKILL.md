@@ -19,27 +19,76 @@ metadata:
 
 1. Identify plan from `~/.claude/plans/`
 2. Read and gather context for referenced files
-3. Apply template from [TEMPLATE.md](assets/TEMPLATE.md)
-4. Save to `docs/plans/YYYY-MM-DD-<feature-name>.md`
+3. **Determine output format:**
+   - **Multi-file (default):** If >= 3 tasks, use [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md) + [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+   - **Single-file:** If < 3 tasks OR user explicitly requests, use [TEMPLATE.md](assets/TEMPLATE.md)
+4. Save to `docs/plans/`:
+   - Multi-file: Create folder `YYYY-MM-DD-<feature-name>/` containing `intro.md` + `task-N.md` files
+   - Single-file: `YYYY-MM-DD-<feature-name>.md`
 5. Update `docs/plans/INDEX.md`
 
 ## Process
 
 1. **Identify the plan** - Ask user which plan or use the most recent
 2. **Read the plan** - Understand tasks and scope
-3. **Gather context** - Read relevant files mentioned in the plan
-4. **Discover test files** - For each modified file, find related `.spec.ts` files and mock locations
-5. **Compute checksums** - Calculate md5 checksums for files to be modified (first 8 chars)
-6. **Gather dependency info** - For package upgrades, query peer dependencies and known issues
-7. **Enrich** - Add self-contained header and inline code context
-8. **Add verification** - How to confirm each task is complete
-9. **Add skill recommendations** - Which skills to invoke per task
-10. **Save** - Write to `docs/plans/YYYY-MM-DD-<feature-name>.md`
-11. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md`
+3. **Determine format** - Count tasks; if >= 3 use multi-file, otherwise single-file (unless user overrides)
+4. **Gather context** - Read relevant files mentioned in the plan
+5. **Discover test files** - For each modified file, find related `.spec.ts` files and mock locations
+6. **Compute checksums** - Calculate md5 checksums for files to be modified (first 8 chars)
+7. **Gather dependency info** - For package upgrades, query peer dependencies and known issues
+8. **Enrich** - Add self-contained header and inline code context
+9. **Add verification** - How to confirm each task is complete
+10. **Add skill recommendations** - Which skills to invoke per task
+11. **Generate output:**
+
+    **If multi-file format:**
+    - Create intro file from [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md)
+    - Create task files from [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+    - Build Task Index in intro with relative links to task files
+    - Code snippets go in intro only; task files reference "See intro"
+
+    **If single-file format:**
+    - Apply [TEMPLATE.md](assets/TEMPLATE.md) (existing behavior)
+
+12. **Save files:**
+    - Multi-file: Create folder `docs/plans/YYYY-MM-DD-<feature>/`, write `intro.md` + all `task-N.md` files into it
+    - Single-file: Write `docs/plans/YYYY-MM-DD-<feature>.md`
+13. **Update INDEX** - Add/update entry in `docs/plans/INDEX.md` with format indicator
 
 ## Key Principles
 
 The enriched plan is for a **fresh Claude session** with zero prior context.
+
+## Multi-File Format: Content Split
+
+When using multi-file format, content is split to minimize context overhead per session:
+
+| Content | Location | Rationale |
+|---------|----------|-----------|
+| Project Context | Intro only | Shared metadata |
+| Architecture | Intro only | Design decisions are global |
+| Code Snippets | Intro only | Avoids duplicating 50-100 lines per task |
+| Migration Patterns | Intro only | Reference patterns apply to all tasks |
+| Execution Workflow | Intro only | Process is the same for all tasks |
+| Execution Log | Intro only | Single source of truth for status |
+| Orchestration Hints | Intro only | Parallel groups span tasks |
+| Gotchas & Warnings | Intro only | Global concerns |
+| Task Index | Intro only | Links to all task files |
+| Task Details | Task file | Task-specific implementation |
+| Context Requirements | Task file | What to read for THIS task |
+| File Checksums | Task file | Task-specific files |
+| Test File Discovery | Task file | Task-specific tests |
+| Steps | Task file | Task-specific actions |
+| Verification | Task file | Task-specific confirmation |
+| Failure Modes | Task file | Task-specific recovery |
+| Handoff Notes | Task file | Filled post-completion |
+| Per-Task Checklist | Task file | Task-specific tracking |
+
+**Task files reference shared content with:**
+```markdown
+> **Plan:** [[feature-name]](./intro.md)
+> **See intro for:** Architecture, Code Context, Execution Workflow
+```
 
 ### Migration Patterns (for upgrade plans)
 
@@ -178,7 +227,12 @@ Without these, executors will skip reviews because the instructions are too far 
 
 ## References
 
-- **Plan template**: [TEMPLATE.md](assets/TEMPLATE.md)
+**Templates:**
+- **Multi-file intro template**: [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md) (default for >= 3 tasks)
+- **Multi-file task template**: [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+- **Single-file template**: [TEMPLATE.md](assets/TEMPLATE.md) (legacy, < 3 tasks)
+
+**Guides:**
 - **Enrichment checklist**: [ENRICHMENT-CHECKLIST.md](references/ENRICHMENT-CHECKLIST.md)
 - **Failure modes examples**: [FAILURE-MODES-EXAMPLES.md](references/FAILURE-MODES-EXAMPLES.md)
 - **Migration patterns**: [MIGRATION-PATTERNS.md](references/MIGRATION-PATTERNS.md)
@@ -188,6 +242,16 @@ Without these, executors will skip reviews because the instructions are too far 
 
 After saving the enriched plan, offer:
 
+**For multi-file format:**
+> **Plan enriched and saved:**
+> - Intro: `docs/plans/<feature>.intro.md`
+> - Tasks: `docs/plans/<feature>.task-0.md` through `task-N.md`
+>
+> Ready to execute?
+> 1. **Execute now** - Start working through tasks in this session
+> 2. **New session** - Open fresh session, run `/execute-plan <feature-name>`
+
+**For single-file format:**
 > **Plan enriched and saved to `docs/plans/<filename>.md`. Ready to execute?**
 >
 > 1. **Execute now** - Start working through tasks in this session
@@ -200,14 +264,23 @@ After saving an enriched plan, update `docs/plans/INDEX.md`:
 1. Read current INDEX.md
 2. Check if plan already exists in table
 3. If new: Add row to "Active Plans" with:
-   - Link to plan file
+   - Link to plan file (intro file for multi-file, main file for single-file)
+   - **Format** column: `multi` or `single`
    - Created date (from filename)
-   - Task count (count `### Task N:` headers)
+   - Task count (count task files for multi-file, or `### Task N:` headers for single-file)
    - Progress: 0/N
    - Branch (from plan's Git Context)
    - Status: ⏳ Not Started
 4. If existing: Update progress and status based on Execution Log
 5. Write updated INDEX.md
+
+**INDEX.md format with multi-file support:**
+```markdown
+| Plan | Format | Created | Tasks | Progress | Branch | Status |
+|------|--------|---------|-------|----------|--------|--------|
+| [Feature A](./2026-01-14-feature-a/intro.md) | multi | 2026-01-14 | 8 | 3/8 | feature/a | 🔄 |
+| [Feature B](./2026-01-13-feature-b.md) | single | 2026-01-13 | 2 | 0/2 | feature/b | ⏳ |
+```
 
 When a plan reaches 100% completion:
 - Move from "Active Plans" to "Completed Plans"

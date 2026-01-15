@@ -60,14 +60,14 @@ Follow this workflow for each task:
 6. **Fix if needed:** Address critical issues (max 2 cycles per task)
 7. **Commit:** After review passes, commit with descriptive message
 8. **Checkpoint Complete:** `/checkpoint <plan-path> <task-number> completed`
-9. **Rotation Check:** If checkpoint warns about rotation, consider clearing session
+9. **Session Stop:** Do NOT continue to next task in same session
 
-### Rotation Heuristic
+**To continue:** Run `/execute-plan <plan-name>` in fresh session. The checkpoint state will load automatically.
 
-After 4 tasks or 30 minutes, consider rotating session:
-1. Run `/checkpoint` to save state
-2. Clear session
-3. Run `/execute-plan <plan-name>` in fresh session
+**Why stop after each task:**
+- Fresh context prevents degradation
+- Code review cannot be skipped
+- Failures are isolated to single tasks
 
 ### Critical vs Non-Critical
 
@@ -138,7 +138,7 @@ After all tasks complete, run `/pr-review-toolkit:review-pr all` and update the 
 **Estimated time:** ~15 min | ~30 min | ~1 hr
 **Depends on:** None | Task N, Task M
 **Parallel group:** A | — (sequential)
-**Dispatch:** direct | sub-agent ([agent-name]) | codex
+**Dispatch:** direct | sub-agent ([agent-name]) | focused-task-executor | codex
 **Recommended skill:** `[skill-name]` | — (none)
   - [When to invoke: BEFORE/DURING/AFTER implementation]
   - [What the skill provides]
@@ -220,6 +220,7 @@ Read these files before implementing. Do not speculate about code you haven't op
 
 **Dispatch guidelines:**
 - `direct`: Simple edits, config changes, < 50 lines modified
+- `focused-task-executor`: Single file, < 30 lines, mechanical changes (uses Haiku for cost efficiency)
 - `sub-agent`: TDD tests, complex implementation, code review
 - `codex`: User preference for OpenAI Codex (requires `/setup-codex` first)
 - Only delegate to sub-agents/codex when the task clearly benefits from a separate context
