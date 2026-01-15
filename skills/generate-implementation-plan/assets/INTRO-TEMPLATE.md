@@ -103,6 +103,23 @@ Mark status as `⛔ Blocked` with notes in the Execution Log. Resolve before con
 ### Final Review
 
 After all tasks complete, run `/pr-review-toolkit:review-pr all` and update the "Final Review" row.
+
+### Commit Message Format
+
+```
+<type>: <task-title> (Task N)
+
+<optional detailed description>
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
+
+**Types:** feat, fix, refactor, test, docs, chore
+
+**Examples:**
+- `feat: add email validation (Task 3)`
+- `fix: resolve auth token expiry bug (Task 5)`
+- `test: add unit tests for user service (Task 2)`
 </workflow>
 
 ---

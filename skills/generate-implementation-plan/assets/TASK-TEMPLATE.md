@@ -110,6 +110,8 @@ npm run test -- [relevant test pattern]
 - [ ] Review: `/pr-review-toolkit:review-pr staged [aspects]`
   - Aspects: `code` (always) + `errors` (if error handling) + `types` (if types modified) + `tests` (if tests added)
 - [ ] Committed
+  - Format: `<type>: <task-title> (Task N)` + Co-Authored-By line
+  - Types: feat, fix, refactor, test, docs, chore
 - [ ] `/checkpoint <plan> <task> completed`
 - [ ] **STOP** - Session pauses here
 ```
