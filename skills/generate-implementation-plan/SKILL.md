@@ -20,8 +20,10 @@ metadata:
 1. Identify plan from `~/.claude/plans/`
 2. Read and gather context for referenced files
 3. **Determine output format:**
-   - **Multi-file (default):** If >= 3 tasks, use [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md) + [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
-   - **Single-file:** If < 3 tasks OR user explicitly requests, use [TEMPLATE.md](assets/TEMPLATE.md)
+   - **Multi-file (default):** If >= 3 implementation tasks (Task 1+), use [INTRO-TEMPLATE.md](assets/INTRO-TEMPLATE.md) + [TASK-TEMPLATE.md](assets/TASK-TEMPLATE.md)
+   - **Single-file:** If < 3 implementation tasks OR user explicitly requests, use [TEMPLATE.md](assets/TEMPLATE.md)
+   - **Task 0 (prerequisites) does not count** toward threshold
+   - Example: Task 0 + Task 1 + Task 2 = 2 implementation tasks → single-file format
 4. Save to `docs/plans/`:
    - Multi-file: Create folder `YYYY-MM-DD-<feature-name>/` containing `intro.md` + `task-N.md` files
    - Single-file: `YYYY-MM-DD-<feature-name>.md`
@@ -31,7 +33,7 @@ metadata:
 
 1. **Identify the plan** - Ask user which plan or use the most recent
 2. **Read the plan** - Understand tasks and scope
-3. **Determine format** - Count tasks; if >= 3 use multi-file, otherwise single-file (unless user overrides)
+3. **Determine format** - Count implementation tasks (Task 1+, excluding Task 0); if >= 3 use multi-file, otherwise single-file (unless user overrides)
 4. **Gather context** - Read relevant files mentioned in the plan
 5. **Discover test files** - For each modified file, find related `.spec.ts` files and mock locations
 6. **Compute checksums** - Calculate md5 checksums for files to be modified (first 8 chars)
