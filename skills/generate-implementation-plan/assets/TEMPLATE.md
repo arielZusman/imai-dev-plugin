@@ -58,6 +58,8 @@ Follow this workflow for each task:
    | + Types | `code types` |
    | + Tests | `code tests` |
 6. **Fix if needed:** Address critical issues (max 2 cycles per task)
+   - **Cycle definition:** Review → Fix → Re-review
+   - After 2 failed review cycles, mark task blocked and stop
 7. **Commit:** After review passes, commit with descriptive message
 8. **Checkpoint Complete:** `/checkpoint <plan-path> <task-number> completed`
 9. **Session Stop:** Do NOT continue to next task in same session
