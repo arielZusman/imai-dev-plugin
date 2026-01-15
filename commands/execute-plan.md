@@ -366,16 +366,21 @@ Use for 🟢 complexity, single-file, <30 line changes. This agent uses the Haik
 
 **After sub-agent completes:** Update your TodoWrite list to mark relevant items as `completed`. Verify all items complete before proceeding.
 
-### 3.3 Handle Parallel Tasks
+### 3.3 Future: Parallel Tasks (Not Currently Supported)
 
-If Orchestration Hints indicates parallel group:
+**Status:** Planned feature - not yet compatible with "one task per session" policy.
+
+**Current behavior:** Execute tasks sequentially, one per session, respecting dependency order.
+
+<future_feature>
+**When enabled,** if Orchestration Hints indicates parallel group:
 
 ```yaml
 parallel_groups:
   - [task_2, task_4]  # Can run simultaneously
 ```
 
-**For parallel execution:**
+**Planned parallel execution flow:**
 1. Verify all dependencies complete
 2. Build prompts for each task in group
 3. Dispatch ALL tasks in single message (parallel Task tool calls):
@@ -388,6 +393,7 @@ parallel_groups:
 6. Checkpoint each task
 
 **Note:** True parallelism requires multiple Task tool calls in same message.
+</future_feature>
 
 ### 3.4 Codex Delegation
 
