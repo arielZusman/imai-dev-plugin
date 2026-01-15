@@ -29,6 +29,18 @@ imai-dev is a Claude Code plugin for structured plan creation, validation, and e
 4. **Execution**: `/execute-plan` orchestrates with sub-agent dispatch and checkpoints
 5. **Persistence**: Checkpoints stored in `docs/plans/.state/`
 
+### Terminology
+
+| Term | Meaning |
+|------|---------|
+| Execute directly | Main session implements the task without spawning agents |
+| Dispatch to sub-agent | Task tool spawns separate agent (e.g., general-purpose, Explore, Plan) |
+| Dispatch to focused-task-executor | Task tool spawns Haiku-based lightweight agent for trivial edits |
+| Invoke skill | Skill tool loads skill instructions into current context |
+| Delegate to Codex | MCP tool sends task to OpenAI Codex (requires `/setup-codex`) |
+
+**Usage:** Use "dispatch" for spawning agents, "invoke" for loading skills, "delegate" for Codex. Avoid mixing these terms.
+
 ### Dispatch Decisions (execute-plan)
 
 Tasks are executed directly or via sub-agents based on complexity:

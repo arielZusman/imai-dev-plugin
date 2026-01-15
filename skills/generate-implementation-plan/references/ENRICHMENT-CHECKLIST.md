@@ -333,7 +333,7 @@ See [FAILURE-MODES-EXAMPLES.md](FAILURE-MODES-EXAMPLES.md) for comprehensive exa
 
 ## Dispatch Hints
 
-Guide the `/execute-plan` command on whether to run task directly or dispatch to sub-agent.
+Guide the `/execute-plan` command on whether to execute directly or dispatch to sub-agent.
 
 **Format per task:**
 ```markdown

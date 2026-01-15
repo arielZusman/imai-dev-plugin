@@ -216,7 +216,7 @@ Read these files before implementing. Do not speculate about code you haven't op
 **Parallelization rules:**
 - Only parallelize tasks with NO shared file modifications
 - All dependencies must be complete before starting
-- Use Task tool to spawn parallel agents when beneficial
+- Use Task tool to dispatch parallel agents when beneficial
 
 ---
 
@@ -242,7 +242,7 @@ Read these files before implementing. Do not speculate about code you haven't op
 - `focused-task-executor`: Single file, < 30 lines, mechanical changes (uses Haiku for cost efficiency)
 - `sub-agent`: TDD tests, complex implementation, code review, multiple files OR > 50 lines
 - `codex`: User preference for OpenAI Codex (requires `/setup-codex` first)
-- Only delegate to sub-agents/codex when the task clearly benefits from a separate context
+- Only dispatch to sub-agents or delegate to Codex when the task clearly benefits from a separate context
 
 ---
 

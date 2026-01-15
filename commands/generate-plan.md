@@ -3,7 +3,7 @@ description: Enrich a Claude Code plan for standalone execution
 argument-hint: [plan-path]
 ---
 
-Use the Task tool to spawn the plan-enricher agent to enrich the specified plan.
+Use the Task tool to dispatch to the plan-enricher agent to enrich the specified plan.
 
 If plan path provided: $ARGUMENTS
 Otherwise: The agent will search ~/.claude/plans/ and prompt for selection.

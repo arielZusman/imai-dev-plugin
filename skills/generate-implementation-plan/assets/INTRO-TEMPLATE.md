@@ -188,7 +188,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 **Parallelization rules:**
 - Only parallelize tasks with NO shared file modifications
 - All dependencies must be complete before starting
-- Use Task tool to spawn parallel agents when beneficial
+- Use Task tool to dispatch parallel agents when beneficial
 
 ---
 
@@ -213,7 +213,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 - `direct`: Simple edits, config changes, < 50 lines modified
 - `sub-agent`: TDD tests, complex implementation, code review
 - `codex`: User preference for OpenAI Codex (requires `/setup-codex` first)
-- Only delegate to sub-agents/codex when the task clearly benefits from a separate context
+- Only dispatch to sub-agents or delegate to Codex when the task clearly benefits from a separate context
 
 ---
 
