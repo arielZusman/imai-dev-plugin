@@ -19,8 +19,17 @@ Orchestrates execution of Codex CLI plans with automated checkpoint management, 
 This command implements the Codex-Claude automation workflow:
 
 1. **Claude Code handles:** Checkpoints, verification, code review, git commits
-2. **Codex CLI handles:** Code implementation only
+2. **Codex CLI handles:** Code implementation only (verification tasks execute directly in Claude)
 3. **One task per session:** Ensures fresh context and mandatory code review
+
+**Task Type Detection:**
+- **Verification tasks**: Automatically detected (title contains "Verify" or no file modifications) and executed directly by Claude without Codex overhead
+- **Implementation tasks**: Delegated to Codex CLI for code changes
+
+**Retry Logic:**
+- **Max 2 retry attempts** per task (shared across Codex, build, and review failures)
+- Error feedback passed to Codex for automated fixes
+- After max retries: task marked as blocked for manual intervention
 
 ## Workflow
 
@@ -133,6 +142,103 @@ Stop execution.
 - Git: ✅ Clean working tree
 ```
 
+### Step 2.5: Task Type Detection
+
+Before executing the task, determine if it's a **verification** or **implementation** task:
+
+```bash
+# Extract task title
+TASK_TITLE=$(grep "^# Task" docs/plans/codex/<plan-name>/task-<N>.md | head -1)
+
+# Check if task modifies files
+HAS_MODIFICATIONS=$(grep -A10 "^## Files" docs/plans/codex/<plan-name>/task-<N>.md | grep -c "Modify:")
+
+# Determine task type using heuristics
+IS_VERIFICATION=false
+if echo "$TASK_TITLE" | grep -qi "verify"; then
+    IS_VERIFICATION=true
+elif [ "$HAS_MODIFICATIONS" -eq 0 ]; then
+    IS_VERIFICATION=true
+fi
+```
+
+**Detection heuristics:**
+1. Title contains "Verify" → verification task
+2. No "Modify:" entries in Files section → verification task
+3. Otherwise → implementation task
+
+#### If Verification Task:
+
+Execute verification steps directly without Codex:
+
+```bash
+if [ "$IS_VERIFICATION" = true ]; then
+    echo "📋 Task detected as: Verification (executing directly, skipping Codex)"
+    echo ""
+
+    # Create checkpoint (started)
+    /checkpoint docs/plans/codex/<plan-name>/intro.md <task-number> started
+
+    # Execute verification steps from task file
+    # (Claude reads Steps section and executes commands directly)
+    # Example from Task 0:
+    # - pwd
+    # - node -p "require('./package.json').dependencies['@angular/core']"
+    # - git branch --show-current
+    # - git status
+    # - node --version
+    # - npm --version
+    # - npm run build
+    # - git log --oneline -3
+
+    # Check all verification results
+    ALL_CHECKS_PASSED=true
+    # (Set to false if any check fails)
+
+    if [ "$ALL_CHECKS_PASSED" = true ]; then
+        echo "✅ Verification complete - all checks passed"
+
+        # Update checkpoint (completed) - skip code review and commit
+        /checkpoint docs/plans/codex/<plan-name>/intro.md <task-number> completed
+
+        # Output summary
+        echo "✅ Task $TASK_NUM completed successfully!"
+        echo ""
+        echo "📋 Summary:"
+        echo "- Task: $TASK_NUM - [Verification]"
+        echo "- All prerequisites verified"
+        echo "- No code changes (verification only)"
+        echo ""
+        echo "⏸️  SESSION PAUSED (one-task-per-session policy)"
+        echo ""
+        echo "To continue to Task $((TASK_NUM + 1)):"
+        echo "  /execute-codex-plan <plan-name>"
+
+        exit 0
+    else
+        echo "❌ Verification failed - see errors above"
+        # Update checkpoint to blocked
+        # (Claude handles checkpoint update with error details)
+        exit 1
+    fi
+fi
+
+# If implementation task, continue to Step 3
+echo "📋 Task detected as: Implementation (delegating to Codex CLI)"
+```
+
+**Rationale for skipping Codex on verification tasks:**
+- **Efficiency**: Verification tasks just run bash commands - Claude can do this directly
+- **Reliability**: Avoids subprocess overhead and potential Codex CLI issues
+- **Speed**: No waiting for Codex startup and initialization
+- **Transparency**: User sees verification output directly
+
+**Verification tasks do not require:**
+- Codex invocation
+- Build verification (already done as part of checks)
+- Code review (no code changes)
+- Git commit (no changes to commit)
+
 ### Step 3: Task Execution (ONE Task Per Session)
 
 Execute the current task through the following steps:
@@ -152,7 +258,7 @@ This updates checkpoint.md with:
 
 #### 3.2 Invoke Codex CLI
 
-**Correct invocation (per official Codex CLI docs):**
+**Correct invocation:**
 
 ```bash
 cd <project-root>
@@ -160,50 +266,80 @@ cd <project-root>
 # Read task file content
 TASK_CONTENT=$(cat docs/plans/codex/<plan-name>/task-<N>.md)
 
-# Execute with required flags
-codex exec --full-auto "$(echo "$TASK_CONTENT")" 2>&1
+# Initialize retry counter
+RETRY_COUNT=0
+MAX_RETRIES=2
+CODEX_SUCCESS=false
+ERROR_FEEDBACK=""
+
+# Execute with retry loop
+while [ $RETRY_COUNT -le $MAX_RETRIES ] && [ "$CODEX_SUCCESS" = "false" ]; do
+    # Prepare task content with error feedback if retry
+    if [ -n "$ERROR_FEEDBACK" ]; then
+        TASK_WITH_FEEDBACK=$(cat <<EOF
+$TASK_CONTENT
+
+---
+## Previous Attempt Failed
+
+$ERROR_FEEDBACK
+
+Please fix these issues and regenerate the code.
+EOF
+)
+        CODEX_INPUT="$TASK_WITH_FEEDBACK"
+    else
+        CODEX_INPUT="$TASK_CONTENT"
+    fi
+
+    # Execute and capture exit code
+    codex exec --full-auto "$CODEX_INPUT" 2>&1
+    CODEX_EXIT=$?
+
+    # Check result
+    if [ $CODEX_EXIT -eq 0 ]; then
+        CODEX_SUCCESS=true
+        echo "✅ Codex completed execution"
+    else
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        echo "❌ Codex CLI execution failed (exit code: $CODEX_EXIT)"
+
+        if [ $RETRY_COUNT -le $MAX_RETRIES ]; then
+            echo "⚠️  Retry $RETRY_COUNT/$MAX_RETRIES after Codex failure"
+            # Error feedback will be captured from Codex output
+            ERROR_FEEDBACK="Exit code $CODEX_EXIT from previous Codex execution"
+        else
+            echo "❌ Max retries exceeded - marking task as blocked"
+            # Update checkpoint to blocked status
+            # (Claude will handle checkpoint update)
+            exit 1
+        fi
+    fi
+done
 ```
 
 **Required flags:**
 - `--full-auto` - Allows Codex to edit files without confirmation prompts
-- Output streams: Progress → stderr, final message → stdout
-- Exit code: 0 = success, non-zero = failure
+
+**Exit codes:**
+- 0 = success
+- non-zero = failure
 
 **Optional flags (for future enhancement):**
 - `--json` - Machine-readable JSON Lines output for parsing
 - `--sandbox danger-full-access` - If default sandbox is too restrictive
 - `-o <path>` - Write final message to file
 
-**Capture:**
-- Combined stdout/stderr (2>&1 redirection)
-- Exit code (0 = success, non-zero = failure)
-- Modified files (from git status after execution)
+**Retry logic:**
+- **Max 2 retry attempts** (shared counter with build and review failures)
+- On failure: extract error, re-invoke with error feedback
+- After 2 failures: mark task as blocked and stop
 
 **Expected Codex behavior:**
 - Receives task content as prompt (inline code context included)
 - Implements code changes per Steps section
 - Writes modified files (with --full-auto permission)
-- Returns final status message
-
-**If Codex returns non-zero exit code:**
-```
-❌ Codex CLI execution failed
-
-Exit code: [code]
-Error output:
-[stderr]
-
-Retry count: [N]/2
-```
-
-- If retry count < 2:
-  - Extract error details
-  - Re-invoke Codex with error feedback
-  - Go back to step 3.2
-- If retry count >= 2:
-  - Update checkpoint: status = blocked
-  - Log error in session_log
-  - Stop execution
+- Returns exit code 0 on success
 
 **Output during execution:**
 ```
@@ -215,56 +351,129 @@ Retry count: [N]/2
 Files modified: [list from git status]
 ```
 
+**On retry:**
+```
+⚠️  Retry 1/2 after Codex failure
+🤖 Re-invoking Codex CLI with error feedback...
+```
+
+**On max retries exceeded:**
+```
+❌ Max retries exceeded - marking task as blocked
+
+Manual intervention required:
+1. Review task file: docs/plans/codex/<plan>/task-<N>.md
+2. Fix issue manually or update task instructions
+3. Run /checkpoint <plan> <task> completed when resolved
+4. Continue with /execute-codex-plan <plan>
+```
+
 #### 3.3 Verify Build
 
 ```bash
-npm run build
+# Run build and capture output
+npm run build 2>&1 | tee build.log
+BUILD_EXIT=${PIPESTATUS[0]}
+
+if [ $BUILD_EXIT -ne 0 ]; then
+    # Build failed
+    BUILD_ERRORS=$(cat build.log)
+    echo "❌ Build failed after Codex changes"
+    echo ""
+    echo "Build errors:"
+    echo "$BUILD_ERRORS"
+    echo ""
+
+    # Check if we can retry (shared counter with Codex)
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        echo "⚠️  Build failed - Retry $RETRY_COUNT/$MAX_RETRIES"
+        echo "Re-invoking Codex with build error feedback..."
+
+        # Set error feedback for Codex retry
+        ERROR_FEEDBACK=$(cat <<EOF
+Build Errors:
+$BUILD_ERRORS
+
+The build failed with the above errors. Please fix these issues and regenerate the code.
+EOF
+)
+
+        # Go back to Codex invocation (step 3.2) with error feedback
+        # (The retry loop in 3.2 will handle this)
+    else
+        echo "❌ Build failed after max retries - marking task as blocked"
+        # Update checkpoint to blocked
+        # (Claude will handle checkpoint update)
+        exit 1
+    fi
+else
+    echo "✅ Build passed"
+fi
 ```
 
-**If build fails:**
-```
-❌ Build failed after Codex changes
+**Build retry logic:**
+- Uses **shared retry counter** with Codex failures
+- Total of 2 retries across all failure types (Codex + build + review)
+- On build failure: extract errors, re-invoke Codex with build error feedback
+- After max retries: mark task as blocked
 
-Build errors:
-[error output]
-
-Retry count: [N]/2 (shared with Codex retry count)
-```
-
-- If retry count < 2:
-  - Extract build errors
-  - Re-invoke Codex with error feedback:
-    ```
-    Previous attempt failed with build errors:
-    [errors]
-
-    Please fix these issues and regenerate the code.
-    ```
-  - Go back to step 3.2
-- If retry count >= 2:
-  - Update checkpoint: status = blocked
-  - Log blocker details in session_log
-  - Stop execution
-
-**If build passes:**
-```
-✅ Build passed
-```
+**Note:** Build verification happens after every Codex execution, including retries. If Codex fixes the issue on retry, build should pass.
 
 #### 3.4 Run Code Review
 
 ```bash
-/pr-review-toolkit:review-pr staged
+# Stage changes first
+git add .
+
+# Run code review (try skill, fallback to manual review)
+if command -v claude &> /dev/null && claude skill --list | grep -q "pr-review-toolkit:review-pr"; then
+    # Use PR review toolkit if available
+    /pr-review-toolkit:review-pr staged
+else
+    # Fallback: Manual review with git diff
+    echo "⚠️  PR review toolkit not available, performing manual review"
+    echo ""
+    echo "📋 Reviewing staged changes..."
+    git diff --staged
+
+    # Simple automated checks
+    echo ""
+    echo "🔍 Running basic checks..."
+
+    # Check for common issues
+    ISSUES_FOUND=false
+
+    # Check for console.log in production code
+    if git diff --staged | grep -E "^\+.*console\.log" | grep -v "test\|spec"; then
+        echo "⚠️  Warning: console.log statements found in code"
+        ISSUES_FOUND=true
+    fi
+
+    # Check for TODO/FIXME comments
+    if git diff --staged | grep -E "^\+.*(TODO|FIXME)"; then
+        echo "⚠️  Warning: TODO/FIXME comments found"
+    fi
+
+    if [ "$ISSUES_FOUND" = false ]; then
+        echo "✅ Basic checks passed"
+    fi
+fi
 ```
 
-**pr-review-toolkit examines:**
+**pr-review-toolkit (if available) examines:**
 - Staged changes (git diff --staged)
 - Code quality issues
 - Security vulnerabilities
 - Style violations
 - Logic errors
 
-**Output:** List of issues with severity levels
+**Fallback manual review checks:**
+- Visual inspection of staged changes
+- Basic automated pattern checks (console.log, TODO comments)
+- Relies on Claude's code analysis
+
+**Output:** List of issues with severity levels (or manual review results)
 
 #### 3.5 Handle Review Feedback
 
