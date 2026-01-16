@@ -105,23 +105,15 @@ npm run test -- [relevant test pattern]
 
 ## Checklist
 
-**For Codex CLI:**
-- [ ] Context requirements read
-- [ ] All code changes implemented per steps above
+**Implementation verification (for Codex CLI execution):**
+- [ ] All code changes implemented correctly per steps above
 - [ ] Files created/modified as specified
-
-**For Claude Code:**
-- [ ] `/checkpoint <plan> <task> started`
-- [ ] Verification passed
 - [ ] Build passes: `npm run build`
-- [ ] Tests pass: `npm run test`
-- [ ] Review: `/pr-review-toolkit:review-pr staged [aspects]`
-  - Aspects: `code` (always) + `errors` (if error handling) + `types` (if types modified) + `tests` (if tests added)
-- [ ] Committed
-  - Format: `<type>: <task-title> (Task N)` + Co-Authored-By lines (Claude + Codex)
-  - Types: feat, fix, refactor, test, docs, chore
-- [ ] `/checkpoint <plan> <task> completed`
-- [ ] **STOP** - Session pauses here
+- [ ] Tests pass: `npm run test` (if applicable)
+- [ ] Feature works as expected (task-specific verification)
+- [ ] No console errors or warnings
+
+**Note:** Orchestration steps (checkpoints, code review, git commits) are handled by `/execute-codex-plan` command, not embedded in task execution.
 ```
 
 ---

@@ -29,6 +29,8 @@ This plugin provides a complete workflow for managing implementation plans:
 
 ## Quick Start
 
+### Standard Workflow (Claude Code Execution)
+
 ```bash
 # 1. Prime session with project context
 /imai-dev:prime
@@ -50,6 +52,43 @@ This plugin provides a complete workflow for managing implementation plans:
 /imai-dev:execute-plan my-feature
 ```
 
+### Codex CLI Workflow (Automated Execution)
+
+For plans that will be executed with Codex CLI (AI-driven code changes with Claude Code orchestration):
+
+```bash
+# 1. Create a basic plan
+"Help me implement feature X"
+# Claude creates plan in ~/.claude/plans/
+
+# 2. Enrich for Codex execution (multi-file format)
+/imai-dev:generate-codex-plan my-feature
+# Creates: docs/plans/codex/YYYY-MM-DD-my-feature/
+#   ├── intro.md (shared context)
+#   └── task-N.md (individual tasks)
+
+# 3. Execute tasks automatically (one task per session)
+/imai-dev:execute-codex-plan YYYY-MM-DD-my-feature
+# This command:
+#   - Loads checkpoint and resumes from current task
+#   - Invokes Codex CLI for code implementation
+#   - Runs build verification
+#   - Runs code review
+#   - Handles retry loops (max 2 attempts)
+#   - Commits changes
+#   - Stops session (one task per session policy)
+
+# 4. Continue to next task (fresh session)
+/imai-dev:execute-codex-plan YYYY-MM-DD-my-feature
+# Repeat until all tasks complete
+```
+
+**Key differences:**
+- **Codex handles:** All code changes (reading, editing, creating files)
+- **Claude Code handles:** Checkpoints, verification, code review, git commits
+- **One task per session:** Ensures fresh context and mandatory code review
+- **Automated workflow:** No manual intervention needed between tasks
+
 ---
 
 ## Commands Reference
@@ -58,8 +97,10 @@ This plugin provides a complete workflow for managing implementation plans:
 |---------|-------------|-------|
 | `prime` | Prime session with git context | `/imai-dev:prime` |
 | `generate-plan` | Enrich plan for standalone execution | `/imai-dev:generate-plan [plan-path]` |
+| `generate-codex-plan` | Enrich plan for Codex CLI execution | `/imai-dev:generate-codex-plan [plan-path]` |
 | `validate-plan` | Validate plan against codebase | `/imai-dev:validate-plan [plan-path]` |
 | `execute-plan` | Execute plan with orchestration | `/imai-dev:execute-plan <plan> [tasks]` |
+| `execute-codex-plan` | Execute Codex plan with automation | `/imai-dev:execute-codex-plan <plan-name>` |
 | `checkpoint` | Save execution checkpoint | `/imai-dev:checkpoint <plan> <task> <status>` |
 
 ---
@@ -78,6 +119,7 @@ This plugin provides a complete workflow for managing implementation plans:
 | Skill | Purpose | Mode |
 |-------|---------|------|
 | `generate-implementation-plan` | Full plan enrichment workflow | Fork (isolated context) |
+| `generate-codex-plan` | Enrich plan for Codex CLI execution | Fork (Plan agent) |
 | `handoff-summary` | Structured handoff for session transitions | Inline |
 | `session-management` | Session health and rotation guidelines | Inline |
 

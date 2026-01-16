@@ -51,13 +51,44 @@ This directory contains enriched implementation plans optimized for Codex CLI ex
 
 ## How to Execute a Codex Plan
 
-### Manual Execution:
+### Recommended: Automated Execution
+
+Use the `/execute-codex-plan` command for fully automated orchestration:
+
+```bash
+/execute-codex-plan YYYY-MM-DD-feature-name
+```
+
+**What it does:**
+1. Loads plan and checkpoint state (resumes from last position)
+2. Runs pre-flight verification (build, tests, git status)
+3. Creates checkpoint (task started)
+4. Invokes Codex CLI for code implementation
+5. Verifies build passes
+6. Runs code review (`/pr-review-toolkit:review-pr staged`)
+7. Handles retry loop for failures (max 2 attempts)
+8. Commits changes with proper message
+9. Updates checkpoint (task completed)
+10. **Stops session** (one task per session for fresh context)
+
+**To continue:** Run the same command again. It automatically resumes from the next task.
+
+**Benefits:**
+- Automated checkpoint management
+- Mandatory code review (cannot be skipped)
+- Consistent commit messages
+- Automatic retry handling
+- Session isolation per task
+
+### Alternative: Manual Execution
+
+For manual control:
+
 1. Read `<plan-name>/intro.md`
 2. For each task:
    - Load task file (e.g., `task-1.md`)
-   - Use Codex CLI to implement code changes
+   - Pass to Codex CLI: `TASK_CONTENT=$(cat task-N.md) && codex exec --full-auto "$(echo "$TASK_CONTENT")"`
    - Use Claude Code for verification and review
-   - Commit and checkpoint
+   - Create checkpoint and commit manually
 
-### Automated Execution:
-Create a script that iterates through task files and coordinates Codex + Claude Code. See EXECUTION-GUIDE.md in the skill for examples.
+See the task's intro.md for detailed execution workflow.

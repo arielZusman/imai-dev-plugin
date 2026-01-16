@@ -76,16 +76,41 @@ Tasks in the same parallel group can run simultaneously:
 **Example:**
 ```
 Group A: Task 1, Task 2 (independent)
-- Run: codex execute task-1.md (instance 1)
-- Run: codex execute task-2.md (instance 2)
+- Run: codex exec --full-auto "$(cat task-1.md)" (instance 1)
+- Run: codex exec --full-auto "$(cat task-2.md)" (instance 2)
 - Verify and commit each independently
 ```
 
 ## Automation Support
 
-The multi-file format enables scripting:
+### Recommended: Use /execute-codex-plan Command
 
-### Example automation script:
+The `/execute-codex-plan` command provides fully automated orchestration:
+
+```bash
+# Execute one task per session
+/execute-codex-plan YYYY-MM-DD-feature-name
+
+# Automatically handles:
+# - Checkpoint management
+# - Codex CLI invocation
+# - Build verification
+# - Code review
+# - Retry loops (max 2 attempts)
+# - Git commits
+# - Session isolation
+```
+
+**Benefits:**
+- Mandatory code review enforcement
+- Consistent error handling
+- Automatic checkpoint state management
+- One task per session for fresh context
+
+### Alternative: Custom Automation Script
+
+For custom automation workflows, the multi-file format enables scripting:
+
 ```bash
 #!/bin/bash
 PLAN_DIR="docs/plans/codex/2026-01-15-feature-x"
@@ -94,7 +119,8 @@ for task_file in $PLAN_DIR/task-*.md; do
   task_num=$(basename $task_file .md | sed 's/task-//')
 
   echo "Starting Task $task_num with Codex..."
-  codex execute $task_file
+  TASK_CONTENT=$(cat $task_file)
+  codex exec --full-auto "$(echo "$TASK_CONTENT")" 2>&1
 
   echo "Verifying with Claude Code..."
   claude checkpoint $PLAN_DIR $task_num started

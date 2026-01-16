@@ -69,43 +69,62 @@ Then continue from the first non-completed task.
 <workflow>
 Follow this workflow for each task:
 
-### Per-Task Cycle
+### Automated Execution (Recommended)
+
+Use the `/execute-codex-plan` command for automated orchestration:
+
+```bash
+/execute-codex-plan {{PLAN_NAME}}
+```
+
+**What it does:**
+1. Loads plan and checkpoint state
+2. Runs pre-flight verification (build, tests, git status)
+3. Creates checkpoint (task started)
+4. Invokes Codex CLI for code implementation
+5. Verifies build passes
+6. Runs code review (`/pr-review-toolkit:review-pr staged`)
+7. Handles retry loop for failures (max 2 attempts)
+8. Commits changes with proper message
+9. Updates checkpoint (task completed)
+10. **Stops session** (one task per session for fresh context)
+
+**To continue:** Run `/execute-codex-plan {{PLAN_NAME}}` again. It will automatically resume from the next task.
+
+**Benefits:**
+- Automated checkpoint management
+- Mandatory code review (cannot be skipped)
+- Consistent commit messages
+- Automatic retry handling
+- Session isolation per task
+
+### Manual Execution (Alternative)
+
+If you prefer manual control, follow the per-task cycle:
 
 **For Codex CLI:**
-1. **Load Task File:** Read the task file for current task number
-2. **Context Load:** Read files listed in task's "Context Requirements"
-3. **Implement:** Use Codex CLI to complete the code changes in the task steps
-   - Codex handles: reading files, editing code, creating new files
-   - Codex should follow the exact steps in the task file
+1. **Load Task File:** Read `./task-N.md` for current task
+2. **Context Load:** Read files listed in "Context Requirements"
+3. **Implement:** Pass task file to Codex CLI for code changes
+   ```bash
+   TASK_CONTENT=$(cat ./task-N.md)
+   codex exec --full-auto "$(echo "$TASK_CONTENT")" 2>&1
+   ```
 
 **For Claude Code (after Codex completes):**
 4. **Checkpoint Start:** `/checkpoint <plan-path> <task-number> started`
-5. **Verify:** Run the task's verification step
-   ```bash
-   npm run build
-   npm run test -- [relevant test pattern]
-   ```
-6. **Review:** Run `/pr-review-toolkit:review-pr` with aspects matching changes:
-   | Changes | Command |
-   |---------|---------|
-   | Code only | `code` |
-   | + Error handling | `code errors` |
-   | + Types | `code types` |
-   | + Tests | `code tests` |
-7. **Fix if needed:** Address critical issues (max 2 cycles per task)
-   - **Cycle definition:** Review → Fix (use Codex) → Re-review
-   - After 2 failed review cycles, mark task blocked and stop
-8. **Commit:** After review passes, commit with descriptive message
+5. **Verify:** Run verification commands from task file
+6. **Review:** `/pr-review-toolkit:review-pr staged`
+7. **Fix if needed:** Address critical issues (max 2 retry cycles)
+8. **Commit:** Create commit with task metadata
 9. **Checkpoint Complete:** `/checkpoint <plan-path> <task-number> completed`
-10. **Session Stop:** Do NOT continue to next task in same session
-
-**To continue:** Run next task in fresh Codex session. Load the next task file and repeat.
+10. **Session Stop:** Do NOT continue to next task
 
 **Why stop after each task:**
 - Fresh context prevents degradation
-- Code review cannot be skipped
-- Failures are isolated to single tasks
-- Enables automation (script can iterate through task files)
+- Code review enforcement
+- Failure isolation
+- Enables automation
 
 ### Critical vs Non-Critical
 
