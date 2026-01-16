@@ -22,9 +22,9 @@ This directory contains enriched implementation plans optimized for Codex CLI ex
 
 ## Active Plans
 
-| Plan | Format | Created | Tasks | Progress | Branch | Status |
-|------|--------|---------|-------|----------|--------|--------|
-| _(none yet)_ | - | - | - | - | - | - |
+| Plan | Created | Tasks | Progress | Branch | Status |
+|------|---------|-------|----------|--------|--------|
+| _(none yet)_ | - | - | - | - | - |
 
 **Status Legend:**
 - ⏳ Not Started
@@ -36,9 +36,9 @@ This directory contains enriched implementation plans optimized for Codex CLI ex
 
 ## Completed Plans
 
-| Plan | Format | Created | Tasks | Completed | Branch |
-|------|--------|---------|-------|-----------|--------|
-| _(none yet)_ | - | - | - | - | - |
+| Plan | Created | Tasks | Completed | Branch |
+|------|---------|-------|-----------|--------|
+| _(none yet)_ | - | - | - | - |
 
 ---
 

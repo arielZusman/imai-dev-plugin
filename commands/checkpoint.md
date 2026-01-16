@@ -35,25 +35,15 @@ Save or update a checkpoint file for the current plan execution.
 Read the existing checkpoint file before updating. Do not assume current state - verify actual task progress and session counts from the file.
 </investigate_before_answering>
 
-**IMPORTANT:** Multi-file and single-file plans use DIFFERENT checkpoint locations:
-- Multi-file: `docs/plans/YYYY-MM-DD-feature/checkpoint.md` (inside plan folder)
-- Single-file: `docs/plans/.state/<plan-slug>.checkpoint.md` (in .state/ folder)
+**Checkpoint location:** `docs/plans/YYYY-MM-DD-feature/checkpoint.md` (inside plan folder)
 
 When this command is invoked:
 
 1. **Parse the plan path** to derive checkpoint location:
 
-   **If path contains `/intro.md` (multi-file subdirectory format):**
-   - Plan folder: `docs/plans/2026-01-08-feature-name/`
-   - Intro: `docs/plans/2026-01-08-feature-name/intro.md`
-   - Checkpoint: `docs/plans/2026-01-08-feature-name/checkpoint.md` (in same folder)
-
-   **If path ends with `.md` (single-file format):**
-   - Plan: `docs/plans/2026-01-08-feature-name.md`
-   - Slug: `2026-01-08-feature-name` (remove `.md`)
-   - Checkpoint: `docs/plans/.state/2026-01-08-feature-name.checkpoint.md`
-
-   **Key difference:** Multi-file stores checkpoint inside plan folder. Single-file uses `.state/` folder.
+   Plan folder: `docs/plans/2026-01-08-feature-name/`
+   Intro: `docs/plans/2026-01-08-feature-name/intro.md`
+   Checkpoint: `docs/plans/2026-01-08-feature-name/checkpoint.md` (in same folder)
 
 2. **Read existing checkpoint** if it exists, otherwise create new one.
 
@@ -189,29 +179,18 @@ continuation:
 
 ## Example Workflow
 
-**Single-file format:**
-```
-# Starting a task
-/checkpoint docs/plans/2026-01-08-auth-feature.md 3 started
-
-# After completing the task
-/checkpoint docs/plans/2026-01-08-auth-feature.md 3 completed
-
-# If an error occurs
-/checkpoint docs/plans/2026-01-08-auth-feature.md 3 error
-
-# If blocked
-/checkpoint docs/plans/2026-01-08-auth-feature.md 3 blocked
-```
-Creates checkpoint at: `docs/plans/.state/2026-01-08-auth-feature.checkpoint.md`
-
-**Multi-file format (subdirectory):**
 ```
 # Starting a task (use intro path)
 /checkpoint docs/plans/2026-01-08-auth-feature/intro.md 3 started
 
 # After completing the task
 /checkpoint docs/plans/2026-01-08-auth-feature/intro.md 3 completed
+
+# If an error occurs
+/checkpoint docs/plans/2026-01-08-auth-feature/intro.md 3 error
+
+# If blocked
+/checkpoint docs/plans/2026-01-08-auth-feature/intro.md 3 blocked
 ```
 Creates checkpoint at: `docs/plans/2026-01-08-auth-feature/checkpoint.md` (in same folder as intro)
 

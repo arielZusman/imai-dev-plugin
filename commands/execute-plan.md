@@ -36,60 +36,40 @@ This command implements **lean orchestration**:
 - Checkpoint updates after each task (MANDATORY - do not skip)
 - Rotation recommendations based on task count/time
 
-## Step 1: Detect Format and Load Plan
+## Step 1: Load Plan
 
-### 1.0 Detect Plan Format
+### 1.0 Locate Plan
 
-Check for multi-file format first (subdirectory), fall back to single-file:
-
-**Multi-file detection (subdirectory):**
+Find plan subdirectory:
 ```
 docs/plans/*$ARGUMENTS.plan*/intro.md
 ```
 
-**If folder with intro.md exists:** Multi-file format
+Plan structure:
 - Plan folder: `docs/plans/YYYY-MM-DD-feature/`
 - Intro: `docs/plans/YYYY-MM-DD-feature/intro.md`
 - Tasks: `docs/plans/YYYY-MM-DD-feature/task-N.md`
 - Checkpoint: `docs/plans/YYYY-MM-DD-feature/checkpoint.md`
 - Slug: folder name (e.g., `YYYY-MM-DD-feature`)
 
-**If folder does NOT exist:** Single-file format (legacy)
-- Plan: `docs/plans/*$ARGUMENTS.plan*.md`
-- Slug: `YYYY-MM-DD-feature` (remove `.md`)
-- Checkpoint: `docs/plans/.state/YYYY-MM-DD-feature.checkpoint.md`
-
 ### 1.1 Construct Paths
 
-**Checkpoint path differs by format:**
-
-**Multi-file (subdirectory):**
+**Checkpoint path:**
 ```
 Plan folder:     docs/plans/2026-01-14-feature/
 Checkpoint path: docs/plans/2026-01-14-feature/checkpoint.md
 ```
 
-**Single-file (legacy):**
-```
-Slug:            2026-01-14-feature
-Checkpoint path: docs/plans/.state/2026-01-14-feature.checkpoint.md
-```
-
-Do NOT Glob for the checkpoint file - the path is deterministic from format detection.
+Do NOT Glob for the checkpoint file - the path is deterministic from the plan folder.
 
 ### 1.2 Load Plan Content
 
-**If multi-file format:**
 1. Read intro file for:
    - Task Index (list of task file paths)
    - Execution Log (current state)
    - Code Context (shared snippets)
    - Orchestration Hints (parallel groups, dispatch decisions)
 2. Do NOT read all task files - only load current task file (in Step 1.5)
-
-**If single-file format:**
-- Read entire plan file (existing behavior)
-- Parse task list with metadata from within the file
 
 ### 1.3 Parse Plan State
 
@@ -131,8 +111,6 @@ Do NOT Glob for the checkpoint file - the path is deterministic from format dete
 Read the actual Context Requirements from the checkpoint or plan. Do not guess file paths or assume what context is needed.
 </investigate_before_answering>
 
-### For Multi-File Format
-
 1. **Get current task number** from checkpoint or Execution Log
 2. **Construct task file path:**
    ```
@@ -143,27 +121,6 @@ Read the actual Context Requirements from the checkpoint or plan. Do not guess f
 4. **For code snippets:** Task file says "See intro for code context"
    - Read referenced snippets from intro's "Relevant Code Context" section
 5. **Read Context Requirements** listed in the task file
-
-### For Single-File Format
-
-**From checkpoint (preferred):**
-
-Read the `context_requirements` section for current task:
-```yaml
-context_requirements:
-  task_9:
-    required:
-      - path: src/services/auth.service.ts
-        sections: [validateToken, refreshToken]
-    reference:
-      - path: docs/auth-flow.md
-```
-
-**From plan (fallback):**
-
-Read the task's "Context Requirements" field from within the plan file.
-
-### Both Formats
 
 **Re-read only required files**, not the entire codebase.
 

@@ -4,8 +4,6 @@ Verify each item before saving the enriched plan.
 
 ## Multi-File Format Validation
 
-When using multi-file format (>= 3 tasks), verify these additional items:
-
 ### Intro File (`<plan-folder>/intro.md`)
 - [ ] **Format field** - `Format: multi-file` in Plan Metadata table
 - [ ] **Task Index table** - Links to all task files with relative paths (`./task-N.md`)
@@ -28,7 +26,7 @@ When using multi-file format (>= 3 tasks), verify these additional items:
 
 ---
 
-## Required Content (Both Formats)
+## Required Content
 
 ### Plan Structure
 - [ ] **Project context** - Repo, service, branch

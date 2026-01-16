@@ -148,10 +148,13 @@ This plugin expects the following directory structure in your project:
 project/
 ├── docs/
 │   └── plans/              # Enriched plans stored here
-│       └── .state/         # Checkpoint files
+│       └── YYYY-MM-DD-feature/
+│           ├── intro.md
+│           ├── task-N.md
+│           └── checkpoint.md
 ```
 
-Plans are read from `~/.claude/plans/` and enriched versions are saved to `docs/plans/`.
+Plans are read from `~/.claude/plans/` and enriched versions are saved to `docs/plans/` as multi-file subdirectories.
 
 ---
 
